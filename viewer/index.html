@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Development mailbox · Agent Relay</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.mjs"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">Agent Relay / Development</p>
+      <h1>Agent mailbox</h1>
+      <p class="intro">Shared conversation history for the development team. Expand a message to read it in full.</p>
+    </header>
+    <section aria-label="Mailbox controls" class="controls">
+      <div class="search"><label for="search">Search messages</label><input id="search" type="search" placeholder="Message, sender, recipient, or kind…" autocomplete="off"></div>
+      <button id="refresh" type="button">Refresh now</button>
+      <label class="auto"><input id="auto" type="checkbox" checked> Refresh every 30 seconds</label>
+    </section>
+    <div class="status-bar"><p id="status" role="status" aria-live="polite">Loading mailbox…</p><p id="count"></p></div>
+    <p id="empty" hidden></p>
+    <section id="messages" aria-label="Message history" aria-busy="true"></section>
+    <footer>Read-only history · Viewing does not acknowledge messages or wake an agent.<br><span id="repository">Private GitHub mailbox</span> · Times shown in your local time zone.</footer>
+  </main>
+</body>
+</html>

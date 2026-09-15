@@ -1,0 +1,21 @@
+{
+  "name": "agent-relay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "setup": "node setup.mjs",
+    "test": "node --test test/*.test.mjs",
+    "smoke": "node smoke.mjs",
+    "viewer": "node viewer.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0"
+  },
+  "description": "Private GitHub-backed communication and work coordination for coding agents"
+}
