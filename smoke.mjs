@@ -6,7 +6,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 const clients=[];
 async function connect(label){
   const client=new Client({name:label,version:'0.1.0'});
-  await client.connect(new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('./server.mjs',import.meta.url))]}));
+  await client.connect(new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('./server.mjs',import.meta.url))],env:process.env.AGENT_MAILBOX_REPO ? {AGENT_MAILBOX_REPO:process.env.AGENT_MAILBOX_REPO} : undefined}));
   clients.push(client);return client;
 }
 async function call(client,name,args={}){
