@@ -1,3 +1,4 @@
+import { createIntegrationCheck, getIntegrationCheck, listIntegrationChecks, advanceIntegrationCheck } from './integration-checks.mjs';
 import { proposeContract, advanceContract, getContract, listContracts } from './contracts.mjs';
 import { rankSkills, getSkillValidations, recordSkillValidation } from './skill-selection.mjs';
 import { requestPeerHelp, advancePeerHelp, getPeerHelp, listPeerHelp } from './peer-help.mjs';
@@ -28,6 +29,10 @@ const overlap = (a,b) => a === b || a.startsWith(b+'/') || b.startsWith(a+'/');
 const recipient = (m, a) => m.to === a.id || m.to.toLowerCase() === a.owner.toLowerCase() || m.to === 'team';
 
 export class Mailbox {
+  createIntegrationCheck = createIntegrationCheck;
+  getIntegrationCheck = getIntegrationCheck;
+  listIntegrationChecks = listIntegrationChecks;
+  advanceIntegrationCheck = advanceIntegrationCheck;
   proposeContract = proposeContract;
   advanceContract = advanceContract;
   getContract = getContract;

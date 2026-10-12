@@ -5,6 +5,7 @@ import { assertCollaborationTaskAction } from './collaboration.mjs';
 import { peerHelpView } from './peer-help.mjs';
 import { goalReasons } from './goals.mjs';
 import { contractView, contractTaskReasons } from './contracts.mjs';
+import { integrationView } from './integration-checks.mjs';
 
 const active = task => ['ready','in_progress','blocked'].includes(task.status);
 
@@ -29,6 +30,14 @@ export async function nextActions({agent_id,after=0,limit=20}) {
     return {...result,allowed:reasons.length===0,reasons};
   };
   const add=(priority,kind,id,reason,tool,args,fields={})=>entries.push({id:kind+':'+id,priority,kind,status:'actionable',reason,inspect:{tool,args:{agent_id,...args}},...fields});
+  for(const record of state.integrationChecks??[]) {
+    if(!record.participants.includes(agent_id))continue;
+    const check=integrationView(record,now);
+    const verifier=record.verifierId===agent_id,creator=record.createdBy===agent_id;
+    const stopped=check.status==='expired'||check.exhausted;
+    const reason=stopped?'Integration deadline or attempt budget exhausted; inspect evidence and seek a scoped decision.':check.status==='running'?'Inspect the recorded run and actual worktree before continuing or recovering; never replay external commands blindly.':check.status==='passed'?'Inspect the exact verified input digest before goal completion.':check.status==='pending'?'Verify policy, claims, agreements, local profile and inputs before acquiring a run lease and starting.':'Inspect failed or blocked integration evidence; source owners repair within existing scope before another bounded attempt.';
+    add(23,'inspect_integration',record.id,reason,'get_integration_check',{integration_id:record.id},{status:stopped?'blocked':check.status==='pending'?(verifier&&policy?'actionable':'waiting'):check.status==='running'?(verifier?'actionable':'waiting'):check.status==='passed'?(creator?'actionable':'waiting'):'actionable',integrationRevision:record.revision,inputDigest:check.manifest?.digest});
+  }
   for(const record of state.contracts??[]) {
     if(!record.participants.includes(agent_id))continue;
     const c=contractView(record,now),v=c.versions.at(-1);

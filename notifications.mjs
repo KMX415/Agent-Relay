@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { contractView } from './contracts.mjs';
+import { integrationView } from './integration-checks.mjs';
 
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const active = task => ['ready', 'in_progress', 'blocked'].includes(task.status);
@@ -14,6 +15,14 @@ export function notificationEvents(state, agentId, now) {
     const sourceKey = `${kind}:${source}`;
     events.push({ id: digest({ agentId, sourceKey, episode }), kind, sourceKey, ...fields });
   };
+  for(const record of state.integrationChecks??[]) {
+    if(!record.participants.includes(agentId))continue;
+    const check=integrationView(record,now);
+    if(['passed','failed','blocked','expired'].includes(check.status)||check.exhausted||check.interrupted) {
+      const condition=check.interrupted?'interrupted':check.exhausted?'exhausted':check.status;
+      add('integration_'+condition,record.id,{revision:record.revision,condition},{priority:condition==='passed'?'result':'decision',integrationId:record.id,summary:condition==='passed'?'Inspect exact integration inputs and observed checks. A pass does not authorize merging.':'Inspect integration evidence and fixed limits. Repairs need their owners and existing scope.',observedAt:record.updatedAt});
+    }
+  }
   for(const record of state.contracts??[]) {
     if(!record.participants.includes(agentId))continue;
     const c=contractView(record,now);

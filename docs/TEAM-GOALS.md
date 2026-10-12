@@ -12,6 +12,10 @@ Task creation, assignment, acceptance, resumption, progress, completion, and eli
 
 Completion requires every linked task to be completed, all usage reservations settled, and one evidence entry per acceptance criterion in order. Evidence remains self-reported. A completed goal does not authorize a merge or deployment. Do not create replacement goals or tasks to reset exhausted limits.
 
+To require combined validation, set `required_integration_work_ids` on `create_goal` to up to ten stable integration work identifiers. This optional list is immutable. Completion then requires a current passing [integration check](INTEGRATION-CHECKS.md) for every identifier, collectively covering all completed implementation tasks in the goal. Creating a goal does not create or run those checks. Existing goals without this list retain their completion behavior.
+
+Budget a dedicated `testing` task for each integration check using its required `execution_task_id`. Every attempt retains that task and its original time limit, with ordinary task eligibility, goal concurrency, and usage reservations enforced. Reserve metered usage on the testing task, record the integration result before completing it or finishing its worker run, and settle observed usage. Repairs use new authorized tasks within the same goal and its remaining task budget.
+
 ## Budget usage deliberately
 
 An optional `max_usage_units` adds a cooperative usage ledger. Choose a consistent unit for the goal and explain it in its description, such as model tokens reported by the host. There is no automatic currency conversion or provider billing API integration.

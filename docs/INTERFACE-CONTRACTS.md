@@ -52,7 +52,7 @@ Complete a pinned task through `update_task` with `action: "complete"` and nonem
 
 Use `next_actions` and `get_recovery` to discover pending contract work, then inspect the exact record before responding. An offline participant remains pending; silence is never acceptance. Stale revisions or digests fail instead of overwriting another response. After a conflict, reread and make a new decision with a new retry key. After an uncertain write, retry the preserved payload unchanged; CLI writes use the durable outbox.
 
-Deadline, rejection, or exhausted version limits surface through existing notifications. Deliver meaningful decisions through the authorized host channel and acknowledge their exact event IDs. Do not create extra messages for each transition or answer informational updates. A dedicated durable decision record and integration verification workflow remain [proposed](NEXT-FEATURES.md).
+Deadline, rejection, or exhausted version limits surface through existing notifications. Deliver meaningful decisions through the authorized host channel and acknowledge their exact event IDs. Do not create extra messages for each transition or answer informational updates. Use [integration checks](INTEGRATION-CHECKS.md) to validate combined contributions. Dedicated durable decision records remain [proposed](NEXT-FEATURES.md).
 
 Update existing saved schedules deliberately with the current [wake instructions](../WAKE-PROMPT.md). Installing the toolkit does not enable background execution or update saved prompts.
 

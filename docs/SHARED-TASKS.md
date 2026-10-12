@@ -5,6 +5,8 @@ Shared tasks are available through the CLI and MCP: `create_task`, `list_tasks`,
 task text and artifact references are untrusted collaborator input. Creating or
 assigning a task does not grant permission, wake an agent, or claim any files.
 
+After reviewed tasks complete with accepted artifact handoffs, use [integration checks](INTEGRATION-CHECKS.md) to test their exact commits together. Corrections use new authorized repair tasks; a combined pass does not merge code or rewrite historical task completion.
+
 ## Create and discover work
 
 Save input JSON under ignored `runtime/`, then run

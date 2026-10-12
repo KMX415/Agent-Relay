@@ -1,3 +1,4 @@
+import { assertGoalIntegration } from './integration-checks.mjs';
 import { randomUUID } from 'node:crypto';
 import { boundedText as text, strings, relativePath, within, taskKinds } from './coordination.mjs';
 const find=(state,id)=>{const g=(state.goals??[]).find(g=>g.id===id);if(!g)throw new Error('Goal not found');return g;};
@@ -28,14 +29,15 @@ export function assertGoalTask(state,task,actor,now,action) {
   if(reasons.length)throw new Error(reasons.join('; '));
   if(task.assigneeId&&!find(state,task.goalId).participants.includes(task.assigneeId))throw new Error('Assignee is not a goal participant');
 }
-export async function createGoal({agent_id,title,description,acceptance,participants,allowed_kinds,allowed_paths,max_tasks,max_concurrent,deadline,max_usage_units=null,request_id}) {
+export async function createGoal({agent_id,title,description,acceptance,participants,allowed_kinds,allowed_paths,max_tasks,max_concurrent,deadline,max_usage_units=null,required_integration_work_ids=[],request_id}) {
+  required_integration_work_ids=strings(required_integration_work_ids,'required_integration_work_ids',10).map(id=>text(id,'required_integration_work_ids',120));
   title=text(title,'title',200);description=text(description,'description',4000);acceptance=strings(acceptance,'acceptance');participants=strings(participants,'participants');allowed_kinds=strings(allowed_kinds,'allowed_kinds');allowed_paths=strings(allowed_paths,'allowed_paths').map(relativePath);request_id=text(request_id,'request_id',120);
   if(!acceptance.length||!participants.includes(agent_id)||!allowed_kinds.length||allowed_kinds.some(k=>!taskKinds.includes(k))||!allowed_paths.length)throw new Error('Goal requires acceptance, creator participation and scope');
   if(!Number.isInteger(max_tasks)||max_tasks<1||max_tasks>100||!Number.isInteger(max_concurrent)||max_concurrent<1||max_concurrent>max_tasks)throw new Error('Invalid goal task budgets');
   if(max_usage_units!==null&&(!Number.isFinite(max_usage_units)||max_usage_units<=0))throw new Error('Invalid usage budget');
   if(typeof deadline!=='string'||!Number.isFinite(Date.parse(deadline)))throw new Error('Invalid goal deadline');
   deadline=new Date(deadline).toISOString();
-  const payload={title,description,acceptance,participants,allowedKinds:allowed_kinds,allowedPaths:allowed_paths,maxTasks:max_tasks,maxConcurrent:max_concurrent,deadline,maxUsageUnits:max_usage_units};
+  const payload={title,description,acceptance,participants,allowedKinds:allowed_kinds,allowedPaths:allowed_paths,maxTasks:max_tasks,maxConcurrent:max_concurrent,deadline,maxUsageUnits:max_usage_units,...(required_integration_work_ids.length?{requiredIntegrationWorkIds:required_integration_work_ids}:{})};
   const fp=JSON.stringify(payload),id=randomUUID();
   return this.change(state=>{const actor=this.actor(state,agent_id);const goals=state.goals??=[];const old=goals.find(g=>g.createdBy===agent_id&&g.requestId===request_id);if(old){if(old.fingerprint!==fp)throw new Error('request_id already used for different content');return old;}
     if(goals.length>=100)throw new Error('Goal registry full');if(Date.parse(deadline)<=this.now())throw new Error('Goal deadline must be future');
@@ -49,7 +51,7 @@ export async function updateGoal({agent_id,goal_id,expected_revision,request_id,
   return this.change(state=>{const actor=this.actor(state,agent_id),g=find(state,goal_id);if(actor.owner!==g.owner)throw new Error('Only goal owner can update goal');if(retry(g,agent_id,request_id,fp))return g;revision(g,expected_revision);
     if(['completed','cancelled'].includes(g.status))throw new Error('Goal is terminal');
     if(action==='resume'&&(g.status!=='paused'||this.now()>=Date.parse(g.deadline)||g.maxUsageUnits!==null&&usage(g)>g.maxUsageUnits))throw new Error('Goal cannot resume');
-    if(action==='complete'){const tasks=(state.tasks??[]).filter(t=>t.goalId===g.id);if(!tasks.length||tasks.some(t=>t.status!=='completed')||evidence.length!==g.acceptance.length||g.reservations.some(r=>r.status==='reserved'))throw new Error('Complete all goal tasks, settle reservations and provide evidence for every acceptance criterion');}
+    if(action==='complete'){assertGoalIntegration(state,g,this.now());const tasks=(state.tasks??[]).filter(t=>t.goalId===g.id);if(!tasks.length||tasks.some(t=>t.status!=='completed')||evidence.length!==g.acceptance.length||g.reservations.some(r=>r.status==='reserved'))throw new Error('Complete all goal tasks, settle reservations and provide evidence for every acceptance criterion');}
     g.status={pause:'paused',resume:'active',complete:'completed',cancel:'cancelled'}[action];record(g,agent_id,request_id,fp,this.now(),{action,summary,evidence});return g;});
 }
 function record(g,actorId,requestId,fingerprint,now,extra){if(g.history.length>=500)throw new Error('Goal history full');g.revision++;g.updatedAt=now;g.history.push({actorId,requestId,fingerprint,createdAt:now,...extra});}
@@ -66,7 +68,7 @@ export async function settleGoalUsage({agent_id,goal_id,reservation_id,expected_
 const str={type:'string',minLength:1};const arr={type:'array',minItems:1,maxItems:30,items:str};const keys={agent_id:str,goal_id:str};const write={expected_revision:{type:'integer',minimum:1},request_id:str};
 const tool=(name,description,properties,required,readOnlyHint=false)=>({name,description,inputSchema:{type:'object',properties,required,additionalProperties:false},annotations:{readOnlyHint,destructiveHint:false,openWorldHint:true}});
 export const goalTools=[
- tool('create_goal','Record a shared outcome and immutable scope/budgets within existing human authorization. Participants are not granted execution permission.',{agent_id:str,title:str,description:str,acceptance:arr,participants:arr,allowed_kinds:arr,allowed_paths:arr,max_tasks:{type:'integer',minimum:1,maximum:100},max_concurrent:{type:'integer',minimum:1,maximum:100},deadline:str,max_usage_units:{type:'number',exclusiveMinimum:0},request_id:str},['agent_id','title','description','acceptance','participants','allowed_kinds','allowed_paths','max_tasks','max_concurrent','deadline','request_id']),
+ tool('create_goal','Record a shared outcome and immutable scope/budgets within existing human authorization. Participants are not granted execution permission.',{agent_id:str,title:str,description:str,acceptance:arr,participants:arr,allowed_kinds:arr,allowed_paths:arr,max_tasks:{type:'integer',minimum:1,maximum:100},max_concurrent:{type:'integer',minimum:1,maximum:100},deadline:str,required_integration_work_ids:{type:'array',maxItems:10,items:str},max_usage_units:{type:'number',exclusiveMinimum:0},request_id:str},['agent_id','title','description','acceptance','participants','allowed_kinds','allowed_paths','max_tasks','max_concurrent','deadline','request_id']),
  tool('get_goal','Read goal, linked tasks and self-reported usage.',keys,['agent_id','goal_id'],true),
  tool('list_goals','List goals for this exact participant.',{agent_id:str,after:{type:'integer',minimum:0},limit:{type:'integer',minimum:1,maximum:100}},['agent_id'],true),
  tool('update_goal','Owner pauses, resumes, cancels or completes outcome with evidence ordered to acceptance criteria. No budget expansion.',{...keys,...write,action:{type:'string',enum:['pause','resume','cancel','complete']},summary:str,evidence:{type:'array',maxItems:30,items:str}},[...Object.keys(keys),...Object.keys(write),'action','summary']),

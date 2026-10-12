@@ -1,12 +1,12 @@
 # Next autonomous collaboration features
 
-Status: interface contracts are implemented; integration verification and durable decision records remain proposed. These additions build on existing goals, tasks, agreements, reviews, handoffs, recovery, and skills. They run through MCP/CLI and each host's existing wake schedule. No dashboard interaction is required.
+Status: interface contracts and integration verification are implemented; durable decision records remain proposed. These additions build on existing goals, tasks, agreements, reviews, handoffs, recovery, and skills. They run through MCP/CLI and each host's existing wake schedule. No dashboard interaction is required.
 
 The outcome is useful progress across separately authorized contributors: agents agree on interfaces, build independently, verify that their results work together, and resolve routine questions without humans carrying messages. One human using several providers benefits from the same workflow.
 
 ## 1. Shared interface contracts
 
-Implemented. See the [interface contract guide](INTERFACE-CONTRACTS.md) for tools, task pins, evidence, and continuation. The section below records the intended workflow; integration checks and durable decision records described later remain future work.
+Implemented. See the [interface contract guide](INTERFACE-CONTRACTS.md) for tools, task pins, evidence, and continuation. Durable decision records described later remain future work.
 
 **Problem:** two agents can finish their assigned tasks and still disagree about an API, schema, configuration format, or error behavior. File claims and task dependencies do not describe those expectations.
 
@@ -35,13 +35,15 @@ Simulate three owners: two implementers and one consumer. Verify concurrent resp
 
 ## 2. Integration verification across contributions
 
+Implemented. See [integration checks](INTEGRATION-CHECKS.md) for exact inputs, local validation profiles, bounded retries, and optional goal completion gates.
+
 **Problem:** verified handoffs establish exact artifacts, and review cycles record verdicts, but neither demonstrates that separately produced changes work together against a particular project base.
 
 **Example:** backend and frontend tasks each pass review. An eligible integration agent combines their exact commits in an isolated project worktree, runs the project's authorized checks, and sends a concrete incompatibility back to the responsible task owner.
 
 ### Records and tools
 
-Proposed tools: `create_integration_check`, `get_integration_check`, `list_integration_checks`, and `advance_integration_check`.
+Tools: `create_integration_check`, `get_integration_check`, `list_integration_checks`, and `advance_integration_check`.
 
 The immutable input manifest identifies one repository, exact base SHA, ordered input commits, source tasks and revisions, accepted handoff digests, pinned contracts, designated verifier, local validation profile name, deadline, and fixed attempt budget. The first version supports contributions to one repository. Cross-repository integration is deferred.
 
@@ -88,7 +90,7 @@ Verify an in-scope choice resolved agent-to-agent, an access expansion left bloc
 
 ## Shared implementation requirements
 
-Contract writes use revision checks, stable request IDs, and the existing durable CLI outbox. The remaining proposals must do the same. Include paginated reads, `next_actions`, recovery, and meaningful notifications from the first release. Bound record counts, examples, responses, and evidence; check the serialized mailbox size before committing any transition. Full storage fails without partial effects or silent deletion.
+Contract and integration writes use revision checks, stable request IDs, and the existing durable CLI outbox. The remaining proposal must do the same. Include paginated reads, `next_actions`, recovery, and meaningful notifications from the first release. Bound record counts, examples, responses, and evidence; check the serialized mailbox size before committing any transition. Full storage fails without partial effects or silent deletion.
 
 Keep old mailboxes and ordinary tasks compatible. Add optional collections with explicit schema validation. Enforce transitions in shared domain code used by both MCP and CLI. Update tool definitions, guides, README, and wake instructions in the same implementation change. Saved schedules still require deliberate prompt updates; toolkit changes do not activate them.
 
@@ -97,7 +99,7 @@ These remain cooperative controls among mailbox writers, not an isolation bounda
 ## Delivery order and evidence
 
 1. **Interface contracts (implemented):** records and task gates give parallel builders a shared target. Synthetic validation does not establish independent human participation.
-2. **Integration verification:** add the exact-input evidence gate and an isolated fixture where individually passing contributions initially fail together.
+2. **Integration verification (implemented):** exact-input evidence gates and isolated local validation connect reviewed contributions to combined test results.
 3. **Durable decisions:** consolidate contract and integration blockers, then verify authorized resolution and selective continuation.
 
 Use the existing team harness for deterministic failure cases, with no additional provider accounts or cloud infrastructure. After those pass, use already connected local providers for one bounded live workflow when authorized. Label simulated owners, provider execution, and observed scheduled runs separately. Neither simulation nor multiple agents under one account proves collaboration among independent humans; that remains a later acceptance step.
