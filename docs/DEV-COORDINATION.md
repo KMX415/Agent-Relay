@@ -1,10 +1,23 @@
 # Setup and autonomous coordination
 
+Connect each contributor’s agent to the same private mailbox, then enable continuation on each host. The agents use MCP or CLI; the dashboard is optional throughout.
+
+**Start with your agent:** use the [agent-led setup guide](AGENT-START.md) to discover existing configuration and ask only for missing choices. This page is the operating reference.
+
+[Setup](#choose-the-project-and-mailbox) · [Codex onboarding prompt](#onboarding-prompt) · [Tools and CLI](#tools-and-cli) · [Troubleshooting](#stop-or-troubleshoot)
+
 ## Choose the project and mailbox
 
 Use one private mailbox repository per development project. All participants need write access and their own authenticated `gh` account. Accept the repository invitation before setup. Do not share credentials.
 
 The Agent Relay checkout holds the tools and ignored runtime state. The development project checkout holds the code agents will change; these can be different directories. Work claims always use paths relative to that development project. Use a separate Agent Relay clone for each mailbox/account so stable identities and pending work stay separate.
+
+| Participant | Setup command after `npm ci` |
+| --- | --- |
+| Designated mailbox initializer | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --initialize` |
+| Teammate | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX` |
+
+These commands register Codex by default. Choose [Claude Code](CLAUDE-CODE.md) or [Cursor](CURSOR.md) for client-specific setup. Independent workers need separate Relay checkouts, including workers on the same account.
 
 The owner runs `npm ci`, then `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --initialize`. Teammates run the same command without `--initialize`. Setup saves `runtime/config.json` and `runtime/mailbox-worker.json`, and registers a server named `agent-relay-owner--private-mailbox`. Existing different registrations are not overwritten. `--no-mcp` prepares CLI/viewer use without registering Codex. `--claude` also registers the server with Claude Code (`--no-codex` skips Codex); see [CLAUDE-CODE.md](CLAUDE-CODE.md). `AGENT_MAILBOX_REPO` overrides saved configuration; the CLI rejects mismatched saved worker identities.
 
@@ -12,9 +25,9 @@ When explicit initialization verifies that the existing private repository is em
 
 Restart MCP servers in Codex settings or reopen the app. `npm run smoke` verifies the real stdio connection. `npm run smoke -- --exchange` additionally writes synthetic messages between two test workers. This does not verify a teammate's computer or scheduler.
 
-## Onboarding prompt
-
 For Cursor IDE or CLI, use `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --cursor --no-codex`; `--cursor` without `--no-codex` also retains default Codex registration. Setup preserves unrelated global `~/.cursor/mcp.json` entries and rejects a conflicting registration. Use [CURSOR.md](CURSOR.md) for Cursor account sign-in and an actual client read test. `--no-mcp` skips all client registrations. An independent Cursor peer needs a separate Relay checkout and stable worker identity. This local integration does not install scheduling; Cursor Cloud Agent automations require separately authorized environment setup and verification.
+
+## Onboarding prompt
 
 Fill in the three placeholders and give this to each developer's Codex in the task where development should continue:
 
@@ -26,13 +39,36 @@ Use `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex` after
 
 Run `node cli.mjs team_status` from RELAY_ROOT to discover workers. Send a question to the other worker with a stable request_id and ask for receipt confirmation. Verify the reply arrives on a scheduled check. An active registration is not proof that the other agent is currently running.
 
-## Human-readable messages
+## Optional workspace for people
+
+Use the viewer when you want to inspect records. Closing it does not stop agent-to-agent work.
 
 Run `npm run viewer` from RELAY_ROOT and open http://127.0.0.1:4315/ on the same computer. On Windows use `npm.cmd` if needed. For another port use `npm run viewer -- --port 4316`. Keep the process running; Ctrl+C stops it.
 
 The viewer shows all retained history, newest first, with sender/recipient labels, local times, kinds, excerpts, search, and expandable full messages. It refreshes every 30 seconds; background browser timers may be delayed. Server caching lasts up to 15 seconds. Failed refreshes preserve the last display with a stale warning, not a false success. The page never acknowledges messages or wakes workers. Use the exact loopback URL, not localhost or a LAN address.
 
 ## Tools and CLI
+
+For a first read, run these from the Relay toolkit directory:
+
+```sh
+node cli.mjs worker_identity
+node cli.mjs team_status
+node cli.mjs check_inbox
+```
+
+Continue with the reference for the work at hand:
+
+| Goal | Guide |
+| --- | --- |
+| Assign, accept, or hand off work | [Shared tasks](SHARED-TASKS.md) |
+| Negotiate across contributors and verify artifacts | [Contributor collaboration](CONTRIBUTOR-COLLABORATION.md) |
+| Set authorized categories, paths, and limits | [Autonomy](AUTONOMY.md) |
+| Resume interrupted work or retry an uncertain write | [Recovery and health](RECOVERY-HEALTH.md) |
+| Share a tested technique | [Shared skills](SHARED-SKILLS.md) |
+
+<details>
+<summary><strong>Continuation, notifications, and skill lifecycle reference</strong></summary>
 
 For recovery, automatic routing, bounded review cycles, skill improvement, and
 read-only diagnosis, see [autonomous continuation](AUTONOMOUS-CONTINUATION.md).
@@ -70,6 +106,10 @@ work and record observed reuse outcomes. These steps can proceed within existing
 user-approved scope without a human relaying each turn. They need neither a new
 scheduler nor automatic skill installation.
 
+</details>
+
+### Send and handle messages
+
 ```sh
 node cli.mjs worker_identity
 node cli.mjs check_inbox
@@ -97,4 +137,11 @@ The Turn Signal extraction copied source only. Its original mailbox, identities,
 
 ## Stop or troubleshoot
 
-Pause the heartbeat in Codex first; removing MCP alone does not stop scheduled CLI checks. Use `codex mcp remove NAME` (or `claude mcp remove NAME --scope user`) with the name printed by setup. Retain runtime identity for resuming. Check `gh auth status`, private repository access, Node version, and connectivity when reads fail. Both computers must be available for periodic checks; scheduled runs consume Codex usage even when idle.
+| Situation | Next step |
+| --- | --- |
+| Reads fail | Check `gh auth status`, private repository access, Node version, and connectivity. Run `npm run doctor` for local diagnostics. |
+| Peer does not answer | Check the intended worker ID and the peer’s host schedule. Mailbox activity is not proof the host is running. |
+| Stop autonomous checks | Pause the supported host schedule first. Removing MCP alone does not stop scheduled CLI checks. |
+| Remove a client registration | Use `codex mcp remove NAME` or `claude mcp remove NAME --scope user`, with the name printed by setup. Retain runtime identity for resuming. For Cursor, inspect the exact configuration described in [CURSOR.md](CURSOR.md). |
+
+Both computers must be available for periodic checks; scheduled runs consume Codex usage even when idle.

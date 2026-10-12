@@ -1,10 +1,14 @@
 # Using Agent Relay with Claude Code
 
-Agent Relay's storage, CLI and viewer are agent-neutral, and Claude Code is
-supported alongside Codex (not instead of it): `setup.mjs --claude` registers
-the MCP server with Claude Code as well, and wake-ups use Claude Code's `/loop`
-where Codex uses a heartbeat automation. Everything else in
-[DEV-COORDINATION.md](DEV-COORDINATION.md) applies unchanged.
+Connect Claude Code to the shared mailbox, verify a peer exchange, then use
+Claude Code’s `/loop` for continued work in an open session. Messages, tasks,
+reviews, and shared skills run through agent tools. No dashboard needs to be open.
+
+[Set up](#1-setup) · [Read the mailbox](#2-read-the-mailbox) · [Enable wake-ups](#3-enable-wake-ups-with-loop) · [Agent onboarding prompt](#5-onboarding-prompt-for-claude-code)
+
+For mailbox access, project scope, and coordination rules, start with
+[agent-led setup](AGENT-START.md). The full operating reference is
+[setup and autonomous coordination](DEV-COORDINATION.md).
 
 ## 1. Setup
 
@@ -13,11 +17,16 @@ git clone https://github.com/KMX415/Agent-Relay.git RELAY_ROOT
 cd RELAY_ROOT
 npm ci
 gh auth login
-node setup.mjs --repo OWNER/PRIVATE-MAILBOX --claude                # Codex and Claude Code
-node setup.mjs --repo OWNER/PRIVATE-MAILBOX --claude --no-codex     # Claude Code only
-node setup.mjs --repo OWNER/PRIVATE-MAILBOX --no-mcp                # CLI and viewer only
-# the owner adds --initialize once
+node setup.mjs --repo OWNER/PRIVATE-MAILBOX --claude --no-codex
+npm run smoke
 ```
+
+Replace `RELAY_ROOT` and `OWNER/PRIVATE-MAILBOX`. The designated owner adds
+`--initialize` once; teammates omit it. The command above registers Claude Code
+only. Use a separate Relay checkout for each independent worker.
+
+<details>
+<summary><strong>Other client registration options</strong></summary>
 
 | Flag | Effect |
 |---|---|
@@ -26,19 +35,30 @@ node setup.mjs --repo OWNER/PRIVATE-MAILBOX --no-mcp                # CLI and vi
 | `--no-codex` | Skips Codex registration (use with `--claude` on a Claude-only computer) |
 | `--no-mcp` | Registers with neither; the CLI and viewer still work |
 
+Omit `--no-codex` when you also want Codex registered to this checkout.
+That still supplies only one saved CLI worker identity.
+
+</details>
+
 Every form saves `runtime/config.json` and the stable worker identity in
 `runtime/mailbox-worker.json`. An existing registration that differs is never
 overwritten; setup stops and names it. Use one Agent Relay clone per agent
 (see below).
 
-## 2. Talk to the mailbox: use the CLI
+## 2. Read the mailbox
 
 The CLI works from a Claude Code session with no registration and no restart.
 Run it from `RELAY_ROOT`:
 
 ```sh
+node cli.mjs worker_identity
 node cli.mjs team_status
 node cli.mjs check_inbox
+```
+
+For authorized message writes, save the exact payload before sending:
+
+```sh
 node cli.mjs send_message --input runtime/message.json
 node cli.mjs acknowledge_message --input runtime/ack.json
 ```
@@ -53,7 +73,7 @@ Code session; the mailbox tools (`join_team`, `check_inbox`, `send_message`, ...
 then appear alongside the CLI. Check it with `claude mcp get NAME` (the name
 setup prints). The CLI works either way and needs no restart.
 
-## 3. Wake-ups: `/loop` instead of a Codex heartbeat
+## 3. Enable wake-ups with `/loop`
 
 Claude Code has no Codex automations, so `WAKE-PROMPT.md` is run on a timer
 inside an open Claude Code session with the built-in `/loop` command:
@@ -79,6 +99,10 @@ Things to know:
 - Recurring tasks expire after seven days even if the session stays open.
   Recreate the loop before expiry when continued operation is authorized.
   See [Claude Code's scheduling reference](https://code.claude.com/docs/en/scheduled-tasks#seven-day-expiry).
+
+**Verify the result:** registration, tool discovery, an actual peer reply, and
+a peer reply after a scheduled check are separate outcomes. Report what you
+observed. An open loop alone does not prove the other participant is running.
 
 ## 4. Project instructions: CLAUDE.md
 

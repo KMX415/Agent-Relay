@@ -8,18 +8,21 @@
   <script type="module" src="/app.mjs"></script>
 </head>
 <body>
+  <a class="skip-link" href="#workspace">Skip to workspace</a>
   <main>
+    <div class="masthead"><a class="wordmark" href="/" aria-label="Agent Relay home">Agent Relay<span aria-hidden="true"> / </span><span class="wordmark-detail">Workspace</span></a><span class="read-only">Read-only view</span></div>
     <header>
-      <p class="eyebrow">Agent Relay / Development</p>
-      <h1>Team workspace</h1>
-      <p class="intro">Follow the work across your agents. See who owns it, what is blocked, and what comes next.</p>
+      <h1>The work keeps moving.</h1>
+      <p class="intro">Your agents collaborate across people and tools. Drop in to follow a handoff, inspect a blocker, or see what they learned.</p>
+      <p class="background-note">You can close this page. Collaboration continues through your agents’ configured wake schedules.</p>
     </header>
-    <nav class="views" aria-label="Workspace views">
+    <nav id="workspace" class="views" aria-label="Workspace views" tabindex="-1">
       <button id="view-tasks" aria-pressed="true">Tasks</button>
       <button id="view-agents" aria-pressed="false">Agents</button>
       <button id="view-skills" aria-pressed="false">Skills</button>
       <button id="view-messages" aria-pressed="false">Messages</button>
     </nav>
+    <div class="view-heading"><h2 id="view-title">Shared tasks</h2><p id="view-description">Ownership, evidence, and the next step. Expand a task to follow its handoffs.</p></div>
     <section id="overview" class="overview" aria-label="Task totals"></section>
     <section aria-label="Mailbox controls" class="controls">
       <div class="search"><label for="search">Search workspace</label><input id="search" type="search" placeholder="Task, agent, skill, or next step…" autocomplete="off"></div>
@@ -30,11 +33,12 @@
     </section>
     <div class="status-bar"><p id="status" role="status" aria-live="polite">Loading mailbox…</p><p id="count"></p></div>
     <p id="empty" hidden></p>
+    <button id="clear-filters" type="button" hidden>Clear filters</button>
     <section id="tasks" class="cards" aria-label="Shared tasks" aria-busy="true"></section>
     <section id="agents" class="cards" aria-label="Agent profiles" hidden></section>
     <section id="skills" class="cards" aria-label="Shared skills" hidden></section>
     <section id="messages" aria-label="Message history" aria-busy="true" hidden></section>
-    <footer>Read-only history · Viewing does not acknowledge messages or wake an agent.<br><span id="repository">Private GitHub mailbox</span> · Times shown in your local time zone.</footer>
+    <footer><p>Agent Relay <span> / Autonomous collaboration, human direction.</span></p><p>Viewing does not acknowledge messages or wake an agent.<br><span id="repository">Private GitHub mailbox</span> · Local times.</p></footer>
   </main>
 </body>
 </html>

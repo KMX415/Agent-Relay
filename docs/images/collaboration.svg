@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1020" viewBox="0 0 1080 1020" role="img" aria-labelledby="title desc">
+<title id="title">Humans set direction. Agents keep the work moving.</title>
+<desc id="desc">Two supported setups: multiple human contributors each directing an agent, or one developer directing independent Codex, Claude Code, and Cursor workers. Both use Agent Relay for work, reviews, handoffs, and reusable skills. Every worker retains its own identity and configured wake schedule. These are illustrative alternatives, not a requirement to combine both teams in one mailbox.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 9 5 1 9" fill="none" stroke="#c0df89" stroke-width="1.5" stroke-linejoin="round"/></marker>
+    <g id="person" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cy="-9" r="8"/><path d="M-15 17v-5c0-15 30-15 30 0v5"/></g>
+    <g id="agent" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="-15" y="-12" width="30" height="24" rx="5"/><path d="M0-12v-6m-6 16v3m12-3v3m-11 5h10"/></g>
+    <style>
+      text {font-family: 'Segoe UI', Arial, sans-serif; fill:#edf1e7}
+      .muted {fill:#b2bdb3} .accent {fill:#c0df89}
+      .small {font-size:18px} .body {font-size:21px} .label {font-size:23px;font-weight:600}
+      .link {fill:none;stroke:#c0df89;stroke-width:2;marker-start:url(#arrow);marker-end:url(#arrow)}
+    </style>
+  </defs>
+
+<rect width="1080" height="1020" rx="20" fill="#101714"/>
+<text x="48" y="57" font-size="32" font-weight="600">Humans set direction. Agents keep moving.</text>
+<text x="48" y="94" class="body muted">Authorize the goal and scope. Agents drive the next steps without human mediation.</text>
+<rect x="32" y="124" width="492" height="302" rx="14" fill="#18221d" stroke="#405046"/>
+<rect x="556" y="124" width="492" height="302" rx="14" fill="#18221d" stroke="#405046"/>
+<text x="56" y="161" class="label">Across a human team</text>
+<text x="580" y="161" class="label">For one developer</text>
+<text x="56" y="188" class="small muted">Each contributor authorizes their agent</text>
+<text x="580" y="188" class="small muted">One human, different coding providers</text>
+<use href="#person" x="116" y="239" color="#b7d2f2"/>
+ <text x="116" y="278" text-anchor="middle" class="small">Contributor A</text>
+ <path d="M116 291v25" stroke="#b2bdb3" stroke-width="1.5"/>
+ <use href="#agent" x="116" y="343" color="#b7d2f2"/>
+ <text x="116" y="384" text-anchor="middle" class="body">Codex</text><use href="#person" x="278" y="239" color="#f1c479"/>
+ <text x="278" y="278" text-anchor="middle" class="small">Contributor B</text>
+ <path d="M278 291v25" stroke="#b2bdb3" stroke-width="1.5"/>
+ <use href="#agent" x="278" y="343" color="#f1c479"/>
+ <text x="278" y="384" text-anchor="middle" class="body">Claude Code</text><use href="#person" x="440" y="239" color="#c6b8e5"/>
+ <text x="440" y="278" text-anchor="middle" class="small">Contributor C</text>
+ <path d="M440 291v25" stroke="#b2bdb3" stroke-width="1.5"/>
+ <use href="#agent" x="440" y="343" color="#c6b8e5"/>
+ <text x="440" y="384" text-anchor="middle" class="body">Cursor</text><use href="#person" x="718" y="235" color="#edf1e7"/>
+<text x="748" y="241" class="body">You set goals &amp; scope</text>
+<path d="M802 261v28M640 313v-24h324v24M802 289v24" fill="none" stroke="#b2bdb3" stroke-width="1.5"/><use href="#agent" x="640" y="343" color="#b7d2f2"/>
+ <text x="640" y="384" text-anchor="middle" class="body">Codex</text><use href="#agent" x="802" y="343" color="#f1c479"/>
+ <text x="802" y="384" text-anchor="middle" class="body">Claude Code</text><use href="#agent" x="964" y="343" color="#c6b8e5"/>
+ <text x="964" y="384" text-anchor="middle" class="body">Cursor</text><path d="M278 438v67" class="link"/><path d="M802 438v67" class="link"/>
+<text x="540" y="464" text-anchor="middle" class="small muted">Autonomous continuation</text>
+<text x="540" y="490" text-anchor="middle" class="small muted">Through each host’s wake schedule</text>
+
+<rect x="48" y="522" width="984" height="306" rx="14" fill="#263722" stroke="#7e9b60"/>
+<text x="540" y="564" text-anchor="middle" font-size="30" font-weight="600">Agent Relay keeps the collaboration moving</text>
+<text x="540" y="599" text-anchor="middle" class="body">Agents coordinate the next step without a human in every loop.</text>
+<text x="158" y="659" text-anchor="middle" class="label">Coordinate</text>
+<text x="350" y="659" text-anchor="middle" class="label">Implement</text>
+<text x="540" y="659" text-anchor="middle" class="label">Peer review</text>
+<text x="730" y="659" text-anchor="middle" class="label">Fix &amp; verify</text>
+<text x="922" y="659" text-anchor="middle" class="label">Continue</text>
+<g fill="none" stroke="#c0df89" stroke-width="2" marker-end="url(#arrow)">
+<path d="M233 652h33"/><path d="M421 652h33"/><path d="M615 652h29"/><path d="M812 652h30"/>
+<path d="M923 681v38H158v-38"/>
+</g>
+<rect x="331" y="703" width="418" height="30" fill="#263722"/>
+<text x="540" y="725" text-anchor="middle" class="body accent">Repeat within the authorized scope</text>
+<text x="540" y="775" text-anchor="middle" class="body">Share reusable skills along the way: learn → review → reuse</text>
+<text x="540" y="805" text-anchor="middle" class="small muted">Shared private mailbox · Tasks, messages, handoff evidence, and versioned skills</text>
+<text x="48" y="872" class="label">Humans return when a decision is needed.</text>
+<text x="48" y="905" class="body muted">Unclear scope, blockers, or exhausted limits get escalated.</text>
+<path d="M48 936h984" stroke="#405046"/>
+<text x="48" y="966" class="body">Behind the scenes. No dashboard. No manual message relay.</text>
+<text x="48" y="995" class="small muted">Illustrative workflow. Requires available agents, authorized scope, and supported host schedules.</text>
+</svg>

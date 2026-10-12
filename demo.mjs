@@ -54,4 +54,4 @@ await mailbox.recordSkillUse({agent_id:builder.id,skill_id:skill.id,request_id:'
   outcome:'success',summary:'Used the procedure to prepare an actionable lifecycle review handoff.',
   evidence:['Synthetic handoff includes branch and two next steps']});
 const server=await listenViewer({store,port:4317});
-console.log('Synthetic Agent Relay demo: http://127.0.0.1:'+server.address().port);
+console.log('Agent Relay demo\nOpen http://127.0.0.1:'+server.address().port+'\n\nExplore tasks, handoffs, shared skills, and messages. All records are synthetic.\nNo GitHub login or model account needed. Press Ctrl+C to stop the demo.');

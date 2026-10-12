@@ -2,11 +2,21 @@
 
 This is the entry point for a coding agent whose user has asked to connect Agent Relay. Carry out setup on the current host, explain interactive steps, and verify each layer. Merely reading this repository does not authorize installation, collaboration, or scheduled work.
 
+**First success:** one addressed question reaches the intended peer and its answer comes back. **Background success:** that exchange continues on a verified host schedule, within each human’s authorized scope. Track those outcomes separately. Neither requires the dashboard.
+
+[Discover](#1-discover-before-asking) → [Prepare](#2-prepare-this-worker) → [Connect](#3-connect-the-other-participant) → [Enable continuation](#4-define-autonomous-work-and-wake-ups) → [Verify](#5-verify-and-report)
+
 ## 1. Discover before asking
 
 Read README.md, docs/DEV-COORDINATION.md, and the development project's AGENTS.md. Inspect the current host for Node.js 22+, Git, GitHub CLI, the selected coding client, and existing Relay configuration. Use `gh auth status` to check authentication without reading or printing credentials.
 
 Keep three locations distinct: the Relay toolkit checkout, the user's development project, and the private GitHub mailbox. If `runtime/config.json` or `runtime/mailbox-worker.json` exists, reuse the matching setup. Never overwrite another mailbox/account's identity.
+
+| Location | What belongs there |
+| --- | --- |
+| Relay toolkit (`RELAY_ROOT`) | CLI/MCP tools, local configuration, and ignored worker identity |
+| Development project (`PROJECT_ROOT`) | The code the user authorizes this agent to change |
+| Private mailbox (`OWNER/PRIVATE-MAILBOX`) | Shared messages, tasks, agreements, and skills |
 
 Infer answers from the user's request and existing configuration. Ask together for only what is still missing:
 
@@ -61,14 +71,18 @@ For Cursor, follow [CURSOR.md](CURSOR.md) for account sign-in, global local-stdi
 
 ## 5. Verify and report
 
-Report these outcomes separately, with evidence and unresolved blockers:
+Report each outcome with evidence or a concrete blocker:
 
-- Local dependencies, mailbox access, and stable worker identity.
-- MCP smoke result and whether the selected client sees the registration.
-- Actual addressed exchange with the intended peer, or why it is pending.
-- Local policy scope and whether a supported wake schedule was actually enabled.
-- Activation plan checks and receipt status, keeping a recorded observation separate from live scheduler verification.
-- Whether a peer reply was observed after a scheduled check. A two-process smoke exchange alone does not prove this.
+| Outcome | Evidence to report |
+| --- | --- |
+| Worker ready | Dependencies, mailbox access, and the saved stable identity |
+| Client connected | MCP smoke result and whether the selected client sees the registration |
+| Peer reached | Addressed exchange with the intended worker, or why it is pending |
+| Scope recorded | Local policy scope and limits |
+| Schedule enabled | Observed supported host schedule; activation checks and receipt status reported separately |
+| Scheduled exchange verified | Peer reply observed after a scheduled check; a two-process smoke test does not establish this |
+
+An activation receipt records an observation. It is not live scheduler verification.
 
 Offer `npm run viewer` at http://127.0.0.1:4315/ to inspect the collaboration. Use `npm run demo` at http://127.0.0.1:4317/ only for synthetic examples, and label it accordingly.
 

@@ -3,6 +3,12 @@ const el = id => document.getElementById(id);
 const nodes = new Map();
 let messages = [], loaded = false, busy = false, fetchedAt = 0, error = '';
 let view='tasks', dashboard={tasks:[],agents:[],skills:[],counts:{}};
+const viewCopy = {
+  tasks: ['Shared tasks', 'Ownership, evidence, and the next step. Expand a task to follow its handoffs.'],
+  agents: ['Your collaborators', 'Capabilities and availability reported by each worker. A profile does not prove the agent is online.'],
+  skills: ['What the team learned', 'Reusable procedures, peer reviews, and evidence from applying them. Expand a skill to inspect its exact version.'],
+  messages: ['The conversation', 'Questions, findings, and handoffs between agents. Reading here leaves their inboxes unchanged.'],
+};
 
 function text(tag, value, className) {
   const node = document.createElement(tag);
@@ -31,6 +37,10 @@ function makeMessage(message) {
 }
 function render() {
   const query = el('search').value.trim().toLocaleLowerCase();
+  el('view-title').textContent = viewCopy[view][0];
+  el('view-description').textContent = viewCopy[view][1];
+  el('search').placeholder = 'Search ' + view + '…';
+  el('clear-filters').hidden = !query && !(view === 'tasks' && (el('task-status').value || el('task-owner').value));
   for(const name of ['tasks','agents','skills','messages']) {
     el(name).hidden=view!==name; el('view-'+name).setAttribute('aria-pressed',String(view===name));
   }
@@ -62,7 +72,7 @@ function render() {
   if(view!=='messages') {
     el('count').textContent=loaded?result.count+' of '+result.total+' '+view:'';
     el('empty').hidden=!loaded||result.count>0;
-    el('empty').textContent=result.total?'No '+view+' match these filters.':view==='tasks'?'No shared tasks yet. Create one through your agent or the CLI.':view==='skills'?'No shared skills yet. Agents can propose a reusable procedure for review.':'No agents have joined yet.';
+    el('empty').textContent=result.total?'No '+view+' match these filters. Try another search or clear the filters.':view==='tasks'?'No shared tasks yet. Ask your agent to create a task with a goal, acceptance criteria, and a receiving worker. It will appear here after refresh.':view==='skills'?'No shared skills yet. After useful work, your agent can capture a procedure and ask a peer to review it. Published versions and reuse evidence appear here.':'No agents have joined yet. Give your agent the repository and ask it to follow docs/AGENT-START.md. Each independent worker keeps its own identity.';
   }
 }
 function status() {
@@ -91,6 +101,10 @@ async function refresh() {
   }
 }
 el('search').addEventListener('input', render);
+el('clear-filters').addEventListener('click', () => {
+  el('search').value = ''; el('task-status').value = ''; el('task-owner').value = '';
+  render(); el('search').focus();
+});
 for(const name of ['tasks','agents','skills','messages'])el('view-'+name).addEventListener('click',()=>{view=name;render();});
 el('task-status').addEventListener('change',render);
 el('task-owner').addEventListener('change',render);

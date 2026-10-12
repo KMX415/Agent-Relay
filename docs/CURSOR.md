@@ -2,6 +2,10 @@
 
 Cursor can use Relay's local stdio MCP tools from the IDE or CLI. Agent-to-agent messages, tasks, reviews, and shared skills use the same mailbox protocol as other clients; the Relay dashboard is optional. This integration registers tools and checks configuration. It does not install a wake schedule or establish unattended execution.
 
+**First success:** Cursor performs two real mailbox reads with the saved worker identity. After that, verify a peer exchange and any scheduled continuation separately.
+
+[Prepare](#prepare-a-worker) → [Sign in](#sign-in-and-inspect-the-connection) → [Test reads](#verify-two-real-tool-calls) → [Check activation](#check-activation) → [Background continuation](#background-continuation)
+
 ## Prepare a worker
 
 Follow [agent-led setup](AGENT-START.md) for the private mailbox, project scope, Node.js, Git, and GitHub CLI prerequisites. Use a separate Relay checkout and saved identity for a Cursor agent that will independently collaborate with another worker. Reusing an existing checkout for a bounded connection smoke check is different from creating an autonomous peer: reuse its saved identity, and do not call `join_team` again.
@@ -18,9 +22,14 @@ npm run smoke
 
 The designated mailbox initializer adds `--initialize` once. Omit `--no-codex` to register the same checkout with Codex as well; that does not give the checkout a second saved worker identity. `--no-mcp` skips all client registrations.
 
+<details>
+<summary><strong>Where configuration is saved and how overrides work</strong></summary>
+
 Setup writes the repository-specific server entry to `~/.cursor/mcp.json` (`%USERPROFILE%/.cursor/mcp.json` on Windows), preserving unrelated configuration. A conflicting entry is not silently replaced. The entry uses this checkout's local server path and selected mailbox. Do not copy it to another machine expecting those paths, identities, and GitHub authentication to exist there.
 
 Cursor supports global and project MCP configuration. The IDE and CLI share configuration conventions, and project configuration can affect the effective server selection. Relay activation checks the global configuration and the selected project's `.cursor/mcp.json`; inspect the active client for any additional ancestor or nested configuration. See [Cursor MCP configuration](https://cursor.com/docs/mcp) and [CLI MCP discovery](https://cursor.com/docs/cli/mcp).
+
+</details>
 
 ## Sign in and inspect the connection
 
@@ -42,6 +51,8 @@ agent mcp list-tools SERVER-NAME-FROM-SETUP
 
 Cursor's [CLI MCP commands](https://cursor.com/docs/cli/mcp) expose server status and tools. Handle client approval for the intended server through Cursor's normal controls; discovery alone does not prove that a model can invoke it. Do not broadly approve unrelated servers just to make a smoke test pass.
 
+## Verify two real tool calls
+
 Server approval and tool-call permission are separate. Non-interactive runs may
 reject an unapproved call even after tool discovery succeeds. Cursor supports
 specific `Mcp(server:tool)` permissions in its CLI configuration; authorize only
@@ -54,6 +65,17 @@ For a bounded, read-only client test, substitute the saved worker ID and exact s
 > Use only Agent Relay server SERVER-NAME for this connection check. Reuse worker EXACT-SAVED-WORKER-ID; do not join or register another worker. Call team_status, then check_inbox with agent_id EXACT-SAVED-WORKER-ID. Report whether those reads succeeded. Do not acknowledge or send messages, change files or policy, start work, or create a schedule. Stop after these reads.
 
 Report tool discovery, actual client invocation, a peer exchange, and scheduled continuation as separate outcomes. A generic MCP smoke test does not establish all four.
+
+| What you observed | What it establishes |
+| --- | --- |
+| `agent mcp list-tools` lists Relay tools | Cursor can discover the server’s tool definitions |
+| Both requested tool calls return successful results | The selected Cursor session can perform those mailbox reads |
+| An answer arrives from the exact peer worker | That worker handled the addressed exchange |
+| A reply arrives after a verified scheduled check | Evidence of continuation through that observed schedule |
+
+If discovery works but a read is rejected, inspect the intended tool permission
+and retry only within the authorized scope. Do not count a zero process exit as
+a successful tool invocation.
 
 ## Check activation
 
