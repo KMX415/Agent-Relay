@@ -45,3 +45,60 @@ test('a different codex registration is still refused', async () => {
   const { run } = fake({ 'codex mcp list': JSON.stringify([{ name: opts.name, enabled: true, transport: { command: 'node', args: ['/x.mjs'], env: {} } }]) });
   await assert.rejects(register(run, ['codex'], opts), /different\/disabled Codex registration/);
 });
+
+const shownRegistration = ({command=opts.node, args=opts.server, environment='    AGENT_MAILBOX_REPO='+opts.repo}={}) =>
+  'agent-relay-owner--box:\n  Command: '+command+'\n  Args: '+args+'\n  Environment:\n'+environment+'\n';
+
+test('Claude refuses wrong executable, partial paths, and extra arguments', async () => {
+  for (const changes of [
+    {command:'/different/node'}, {command:opts.node+'-other'},
+    {args:opts.server+'.backup'}, {args:opts.server+' --other'},
+    {args:'--require /other.mjs '+opts.server},
+  ]) {
+    const {run,calls}=fake({'claude mcp get':shownRegistration(changes)});
+    await assert.rejects(register(run,['claude'],opts),/different Claude Code registration/);
+    assert.equal(calls.length,1);
+  }
+});
+
+test('Claude requires exactly the mailbox variable in the environment section', async () => {
+  for (const environment of [
+    '    AGENT_MAILBOX_REPO=owner/box-other',
+    '    OTHER_REPO=owner/box',
+    '    PREFIX_AGENT_MAILBOX_REPO=owner/box',
+    '    AGENT_MAILBOX_REPO=owner/box\n    AGENT_MAILBOX_REPO=owner/other',
+    '',
+  ]) {
+    const {run,calls}=fake({'claude mcp get':shownRegistration({environment})});
+    await assert.rejects(register(run,['claude'],opts),/different Claude Code registration/);
+    assert.equal(calls.length,1);
+  }
+  const {run}=fake({'claude mcp get':shownRegistration().replace('  Environment:', '  Notes:')});
+  await assert.rejects(register(run,['claude'],opts),/different Claude Code registration/);
+});
+
+test('Claude refuses missing or ambiguous fields', async () => {
+  for (const shown of [
+    shownRegistration().replace('  Command: '+opts.node+'\n',''),
+    shownRegistration().replace('  Args: '+opts.server+'\n',''),
+    shownRegistration()+'  Command: '+opts.node+'\n',
+    shownRegistration()+'  Args: '+opts.server+'\n',
+    'Unrecognized output '+opts.node+' '+opts.server+' '+opts.repo,
+  ]) {
+    const {run,calls}=fake({'claude mcp get':shown});
+    await assert.rejects(register(run,['claude'],opts),/different Claude Code registration/);
+    assert.equal(calls.length,1);
+  }
+});
+
+test('Claude accepts exact Windows paths with spaces, escaped paths, and CRLF output', async () => {
+  const windows={...opts,node:'C:\\Program Files\\nodejs\\node.exe',server:'C:\\My Relay\\server.mjs'};
+  for (const escaped of [false,true]) {
+    const format=value=>escaped?value.replaceAll('\\','\\\\'):value;
+    const shown=shownRegistration({command:format(windows.node),args:format(windows.server),
+      environment:'    AGENT_MAILBOX_REPO: '+opts.repo}).replaceAll('\n','\r\n');
+    const {run,calls}=fake({'claude mcp get':shown});
+    assert.match((await register(run,['claude'],windows))[0],/already matches/);
+    assert.equal(calls.length,1);
+  }
+});

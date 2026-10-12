@@ -25,8 +25,29 @@ async function registerClaude(run, { name, repo, node, server }) {
   let shown = null;
   try { shown = await run('claude', ['mcp', 'get', name]); } catch { shown = null; }
   if (shown !== null) {
-    const text = shown.split('\\\\').join('\\');                       // Windows paths may print with doubled backslashes
-    if (!text.includes(server) || !text.includes(repo))
+    // Compare complete fields; unknown or ambiguous output must fail closed.
+    const lines = shown.split(/\r?\n/);
+    const field = label => {
+      const prefix = '  ' + label + ':';
+      const values = lines.filter(line => line.startsWith(prefix))
+        .map(line => line.slice(prefix.length).trim());
+      return values.length === 1 ? values[0] : null;
+    };
+    const environment = [];
+    let inEnvironment = false;
+    for (const line of lines) {
+      if (line === '  Environment:') { inEnvironment = true; continue; }
+      if (inEnvironment && line.trim() && !line.startsWith('    ')) inEnvironment = false;
+      if (inEnvironment) {
+        const match = line.match(/^    AGENT_MAILBOX_REPO(?:=|:\s*)(.*)$/);
+        if (match) environment.push(match[1].trim());
+      }
+    }
+    // Accommodate literal or escaped Windows paths without weakening equality.
+    const samePath = (actual, expected) => actual === expected ||
+      (expected.includes('\\') && actual === expected.replaceAll('\\', '\\\\'));
+    if (!samePath(field('Command'), node) || !samePath(field('Args'), server) ||
+        environment.length !== 1 || environment[0] !== repo)
       throw new Error('A different Claude Code registration exists for ' + name + '. Inspect it (claude mcp get ' + name + ') before replacing it.');
     return 'Claude Code: MCP registration already matches.';
   }
