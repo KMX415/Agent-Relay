@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { createTask, listTasks, getTask, updateTask } from './tasks.mjs';
 import { updateAgent, findAgents, checkTask, profileView } from './coordination.mjs';
 import { createSkill, listSkills, getSkill, reviewSkill, updateSkill, recordSkillUse, exportSkill } from './skills.mjs';
+import { routeTask } from './routing.mjs';
+import { startReviewCycle, getReviewCycle, advanceReviewCycle } from './review-cycles.mjs';
+import { saveCheckpoint, getRecovery, reportWorkerHealth, teamHealth } from './recovery.mjs';
+import { assessSkills, proposeSkillImprovement, resolveSkillImprovement } from './skill-improvement.mjs';
 const text = (value, name, max = 4000) => {
   if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error(`Invalid ${name}`);
   return value.trim();
@@ -15,6 +19,17 @@ const overlap = (a,b) => a === b || a.startsWith(b+'/') || b.startsWith(a+'/');
 const recipient = (m, a) => m.to === a.id || m.to.toLowerCase() === a.owner.toLowerCase() || m.to === 'team';
 
 export class Mailbox {
+  routeTask = routeTask;
+  startReviewCycle = startReviewCycle;
+  getReviewCycle = getReviewCycle;
+  advanceReviewCycle = advanceReviewCycle;
+  saveCheckpoint = saveCheckpoint;
+  getRecovery = getRecovery;
+  reportWorkerHealth = reportWorkerHealth;
+  teamHealth = teamHealth;
+  assessSkills = assessSkills;
+  proposeSkillImprovement = proposeSkillImprovement;
+  resolveSkillImprovement = resolveSkillImprovement;
   createSkill = createSkill;
   listSkills = listSkills;
   getSkill = getSkill;

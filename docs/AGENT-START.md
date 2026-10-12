@@ -65,3 +65,9 @@ Report these outcomes separately, with evidence and unresolved blockers:
 Offer `npm run viewer` at http://127.0.0.1:4315/ to inspect the collaboration. Use `npm run demo` at http://127.0.0.1:4317/ only for synthetic examples, and label it accordingly.
 
 When verification is complete, continue only within the user's authorized project scope. Use task history for progress, evidence, blockers, and next steps. Bring the human back when a decision or permission is needed.
+
+For background continuation, use [the continuation guide](AUTONOMOUS-CONTINUATION.md)
+and the current wake prompt on each host. Read recovery state before resuming,
+use bounded routing and review cycles for authorized collaboration, and preserve
+evidence for skill improvement. `npm run doctor` checks local configuration without
+creating a worker; the optional viewer is not required for any of these workflows.

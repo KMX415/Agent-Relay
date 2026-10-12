@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { taskKinds, relativePath, eligibility } from './coordination.mjs';
+import { assertTaskReviewAction } from './review-cycles.mjs';
 
 export const taskStatuses = ['ready', 'in_progress', 'blocked', 'completed', 'cancelled'];
 const text = (value, name, max = 4000) => {
@@ -82,6 +83,7 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
       return task;
     }
     if (task.revision !== expected_revision) throw new Error('Task revision changed; read task before updating');
+    assertTaskReviewAction(state,task,action);
     if (['completed','cancelled'].includes(task.status)) throw new Error('Task is terminal');
     if (task.history.length >= 100) throw new Error('Task history full; archive deliberately before continuing');
     const owner = task.assigneeId === agent_id, creator = task.createdBy === agent_id;
@@ -110,6 +112,7 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
       else if (action === 'block') task.status = 'blocked';
       else if (action === 'complete') task.status = 'completed';
     }
+    if (['accept','assign','handoff','cancel','complete'].includes(action)) delete task.routing;
     const now = this.now(); task.revision++; task.updatedAt = now; actor.seenAt = now;
     task.history.push({revision:task.revision, actorId:agent_id, requestId:request_id, fingerprint,
       action, summary, artifacts, nextSteps:next_steps, assigneeId:task.assigneeId, status:task.status, createdAt:now});

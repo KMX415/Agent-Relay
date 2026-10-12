@@ -79,6 +79,11 @@ These are cooperative workflow controls. They do not sandbox an agent's commands
 | --- | --- |
 | Addressed agent messages | Questions, answers, review requests, and handoffs to an exact worker or team |
 | Persistent shared tasks | Assignment, acceptance, dependencies, progress, blocking, resumption, handoff, and completion |
+| Automatic handoff routing | Select matching available workers, track acceptance deadlines, and retry unaccepted delivery within fixed limits |
+| Recovery checkpoints and outbox | Resume from durable next steps and retry saved CLI coordination writes after interruptions |
+| Bounded review cycles | Request changes, resubmit, and require approval of the current task revision before completion |
+| Skill improvement proposals | Detect repeated distinct failures and track a reviewed successor without losing the original evidence |
+| Team health checks | Diagnose local setup and stale team records without opening the viewer |
 | Shared reusable skills | Capture a tested technique, review an immutable version, publish it, and record how it works for another agent |
 | Capability discovery | Find agents by required skills and path coverage across provider labels |
 | Local autonomy policies | Bound authorized work and explain why a task cannot continue |
@@ -99,6 +104,18 @@ A useful collaboration passes on reasoning as well as results. Agents can build 
 Each skill records when to use it, the steps, validation, limitations, and evidence. Receiving agents discover relevant published skills before work, inspect provenance and reviews, and can export a `SKILL.md` document. Success and failure reports stay attached to the exact version used. Improvements become new immutable versions, preserving the evidence behind earlier work. The optional workspace lets people inspect that process.
 
 This is knowledge shared between agents through reusable instructions. Export does not install or execute a skill, change an agent's advertised capabilities, or train a model. Applying a skill still follows the receiving user's scope. See the [shared skills guide](docs/SHARED-SKILLS.md) for the complete lifecycle.
+
+## Keep moving through handoffs and interruptions
+
+The agents' existing wake schedules can drive the entire continuation loop. No dashboard or separate skill scheduler needs to be open.
+
+1. **Recover.** Inspect saved checkpoints, assigned work, pending reviews, and uncertain coordination writes before starting another work segment. Recheck the task, artifacts, and authorized scope.
+2. **Route.** Select a worker whose reported capabilities and paths match the task. If it does not accept before the deadline, try another eligible worker within the fixed attempt budget. Accepted work is never taken over automatically.
+3. **Review and fix.** A designated reviewer records evidence and findings. The builder revises and resubmits up to the round limit. Completion requires approval tied to the current task record revision; exhausted or cancelled reviews require an explicit decision.
+4. **Improve shared skills.** Repeated distinct failures create a durable improvement proposal. The skill's creator prepares a successor, gets it reviewed and published, and resolves the proposal. Retirement of an older version remains explicit.
+5. **Check health.** Agents inspect stale activity, overdue acceptance, review exhaustion, and worker-reported scheduler status. `npm run doctor` checks local dependencies, mailbox access, identity, and policy configuration.
+
+These tools persist and enforce coordination state; the host agent still performs the work on its supported wake schedule. Checkpoints do not replay shell commands, reviews do not attest to unseen repository edits, and health reports cannot establish that a remote host is online. Existing schedules must receive the updated [wake instructions](WAKE-PROMPT.md) to use the new flow. See the [continuation guide](docs/AUTONOMOUS-CONTINUATION.md).
 
 ## See it working
 
@@ -149,6 +166,8 @@ Setup registers Codex by default. Add `--claude` for Claude Code, or `--claude -
 | [Setup and scheduled coordination](docs/DEV-COORDINATION.md) | [Profiles and autonomy policies](docs/AUTONOMY.md) |
 | [Claude Code setup](docs/CLAUDE-CODE.md) | [Wake instructions](WAKE-PROMPT.md) |
 | [Share and reuse skills](docs/SHARED-SKILLS.md) | [Skill review, versions, and export](docs/SHARED-SKILLS.md#review-and-publish) |
+| [Autonomous continuation](docs/AUTONOMOUS-CONTINUATION.md) | [Recovery and health](docs/RECOVERY-HEALTH.md) |
+| [Review cycles](docs/REVIEW-CYCLES.md) | [Improving shared skills](docs/SKILL-IMPROVEMENT.md) |
 | [Contributing](CONTRIBUTING.md) | [Source provenance](PROVENANCE.md) and [rights](RIGHTS.md) |
 
 For development, run `npm test`. Tests use simulated storage. `npm run smoke` checks the local MCP connection; the optional `npm run smoke -- --exchange` writes synthetic messages between two test workers in your configured private mailbox. A teammate's scheduled reply is the separate test of their host and wake mechanism.
