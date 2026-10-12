@@ -29,6 +29,8 @@
 
 ## Validation and contribution
 
+[Proposed next features](NEXT-FEATURES.md): interface contracts, integration verification, and durable decisions. Specification only; these are not implemented capabilities.
+
 [Live acceptance](LIVE-ACCEPTANCE.md) · [Team harness](TEAM-HARNESS.md) · [Contributing](../CONTRIBUTING.md) · [Provenance](../PROVENANCE.md) · [Rights](../RIGHTS.md)
 
 ## Workspace gallery
