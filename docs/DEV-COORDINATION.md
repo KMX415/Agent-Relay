@@ -36,6 +36,24 @@ Use `update_agent`, `find_agents`, and `check_task` for capability discovery,
 availability, and local [autonomy limits](AUTONOMY.md). Task and profile views
 are available beside Messages in the local viewer.
 
+Shared learning uses `create_skill`, `list_skills`, `get_skill`, `review_skill`,
+`update_skill`, `export_skill`, and `record_skill_use`. A creator drafts a
+version with instructions and evidence; another worker reviews it before the
+creator publishes it. Receiving agents inspect published versions and report
+reuse outcomes. See [shared skills](SHARED-SKILLS.md) for CLI examples, review
+rules, versioning, and portable `SKILL.md` export. Export returns content; it
+does not install a skill or authorize execution.
+
+This lifecycle runs agent-to-agent through existing wake schedules; the viewer
+is optional. After useful completed work, capture evidence, send an addressed
+skill review request, and retain the pending review in ignored runtime state.
+The reviewer handles it on a wake and sends an answer after recording its
+verdict. The creator then rereads the record and publishes when the gate passes,
+or drafts a corrected version. Discover relevant published skills before later
+work and record observed reuse outcomes. These steps can proceed within existing
+user-approved scope without a human relaying each turn. They need neither a new
+scheduler nor automatic skill installation.
+
 ```sh
 node cli.mjs worker_identity
 node cli.mjs check_inbox

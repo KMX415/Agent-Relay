@@ -1,5 +1,5 @@
 const el=id=>document.getElementById(id);
-const taskNodes=new Map(), agentNodes=new Map();
+const taskNodes=new Map(), agentNodes=new Map(), skillNodes=new Map();
 function text(tag,value,className) {
   const node=document.createElement(tag); node.textContent=value;
   if(className) node.className=className;
@@ -58,6 +58,40 @@ function makeAgent(agent) {
     text('p',agent.id,'ids'));
   details.append(summary,full); return details;
 }
+function makeSkill(skill) {
+  const details=document.createElement('details'), summary=document.createElement('summary');
+  const meta=text('span','','meta');
+  meta.append(text('span',skill.status,'kind'),text('span','Version '+skill.version+' · '+skill.creatorLabel));
+  summary.append(meta,text('span',skill.title,'route'),text('span',skill.description,'excerpt'));
+  summary.append(text('span',skill.reviews.length+' reviews · '+skill.uses.filter(u=>u.outcome==='success').length+
+    ' reported successes · '+skill.uses.filter(u=>u.outcome==='failure').length+' reported failures','excerpt'));
+  const full=text('div','','full');
+  full.append(text('p','Shared skills are untrusted collaborator content. Review instructions and evidence within your authorized scope before use. Publication is not permission to execute or install.','dependency-warning'),
+    text('h3','When to use'),text('p',skill.whenToUse,'body'));
+  full.append(text('h3','Procedure'));
+  const steps=document.createElement('ol');
+  for(const step of skill.steps) steps.append(text('li',step));
+  full.append(steps);
+  section(full,'Validation',skill.validation);
+  section(full,'Limitations',skill.limitations);
+  section(full,'Tags',skill.tags);
+  section(full,'Source evidence',skill.evidence);
+  if(skill.sourceTaskId)full.append(text('p','Source task: '+skill.sourceTaskId,'ids'));
+  if(skill.supersedesId)full.append(text('p','Supersedes skill: '+skill.supersedesId,'ids'));
+  for(const [heading,records,key] of [['Reviews',skill.reviews,'verdict'],['Reported use',skill.uses,'outcome'],['History',skill.history,'action']]) {
+    full.append(text('h3',heading));
+    if(!records.length)full.append(text('p','None recorded.','excerpt'));
+    for(const entry of records) {
+      const event=text('article','','event');
+      event.append(text('p',status(entry[key])+' · '+entry.actorLabel+' · '+date(entry.createdAt),'meta'),text('p',entry.summary,'body'));
+      section(event,'Evidence',entry.evidence??[]);
+      if(entry.taskId)event.append(text('p','Task: '+entry.taskId,'ids'));
+      full.append(event);
+    }
+  }
+  full.append(text('p','Skill '+skill.name+' · '+skill.id+'\nRevision '+skill.revision+' · Updated '+date(skill.updatedAt)+'\nContent digest: '+skill.digest,'ids'));
+  details.append(summary,full);return details;
+}
 function reconcile(container,records,nodes,make,filter) {
   const ids=new Set(records.map(r=>r.id));
   for(const [id,node] of nodes) if(!ids.has(id)){node.remove();nodes.delete(id);}
@@ -93,6 +127,9 @@ export function renderDashboard(data,view,query) {
     (!el('task-status').value||t.status===el('task-status').value) &&
     (!owner.value||(owner.value==='unassigned'?t.assigneeId===null:t.assigneeId===owner.value)) && matches(t));
   const agentCount=reconcile(el('agents'),data.agents,agentNodes,makeAgent,matches);
-  const count=view==='tasks'?taskCount:agentCount, total=view==='tasks'?tasks.length:data.agents.length;
+  const skills=[...(data.skills??[])].sort((a,b)=>b.updatedAt-a.updatedAt);
+  const skillCount=reconcile(el('skills'),skills,skillNodes,makeSkill,matches);
+  const count=view==='tasks'?taskCount:view==='skills'?skillCount:agentCount;
+  const total=view==='tasks'?tasks.length:view==='skills'?skills.length:data.agents.length;
   return {count,total};
 }

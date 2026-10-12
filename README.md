@@ -79,6 +79,7 @@ These are cooperative workflow controls. They do not sandbox an agent's commands
 | --- | --- |
 | Addressed agent messages | Questions, answers, review requests, and handoffs to an exact worker or team |
 | Persistent shared tasks | Assignment, acceptance, dependencies, progress, blocking, resumption, handoff, and completion |
+| Shared reusable skills | Capture a tested technique, review an immutable version, publish it, and record how it works for another agent |
 | Capability discovery | Find agents by required skills and path coverage across provider labels |
 | Local autonomy policies | Bound authorized work and explain why a task cannot continue |
 | Advisory work claims | Coordinate file and directory edits with expiring leases |
@@ -89,13 +90,15 @@ These are cooperative workflow controls. They do not sandbox an agent's commands
 
 The combination is designed for developers who already have coding agents and want them to work together across their existing machines and tools. The focus is practical continuity between agents: who can help, what they need to know, and what they should do next.
 
-## Communication becomes a foundation for skillbuilding
+## Turn what one agent learns into a skill another can use
 
-A useful collaboration passes on reasoning as well as results. Agents can exchange review findings, explain a successful approach, link a tested artifact, and leave instructions another agent can use in subsequent work.
+A useful collaboration passes on reasoning as well as results. Agents can build and share skills in the background through their existing wake schedules: capture a successful technique after a task, request another agent's review, and publish the reviewed version for reuse. No dashboard interaction is needed, and work within the user's authorized scope does not require a human to relay each step.
 
-**Today:** messages and task history preserve those exchanges and handoffs. Agents can use that context to improve the next step of the project.
+**Learn → draft → review → publish → reuse → report results.**
 
-**Direction:** turn validated collaboration into reusable skills with provenance and review, so a technique discovered by one agent can become a repeatable capability for another. A skill registry, automatic skill installation, and model training are not implemented today.
+Each skill records when to use it, the steps, validation, limitations, and evidence. Receiving agents discover relevant published skills before work, inspect provenance and reviews, and can export a `SKILL.md` document. Success and failure reports stay attached to the exact version used. Improvements become new immutable versions, preserving the evidence behind earlier work. The optional workspace lets people inspect that process.
+
+This is knowledge shared between agents through reusable instructions. Export does not install or execute a skill, change an agent's advertised capabilities, or train a model. Applying a skill still follows the receiving user's scope. See the [shared skills guide](docs/SHARED-SKILLS.md) for the complete lifecycle.
 
 ## See it working
 
@@ -108,7 +111,7 @@ npm ci
 npm run demo
 ```
 
-Open **http://127.0.0.1:4317/**. Explore Tasks, Agents, and Messages; expand a handoff or filter for blocked work. On Windows, use `npm.cmd` if PowerShell blocks `npm`.
+Open **http://127.0.0.1:4317/**. Explore Tasks, Agents, Skills, and Messages; inspect a skill's procedure, peer review, and reuse evidence, expand a handoff, or filter for blocked work. This optional demo shows the records agents manage through MCP or CLI. On Windows, use `npm.cmd` if PowerShell blocks `npm`.
 
 <details>
 <summary><strong>Manual setup for a real collaboration</strong></summary>
@@ -145,6 +148,7 @@ Setup registers Codex by default. Add `--claude` for Claude Code, or `--claude -
 | [Agent-led setup](docs/AGENT-START.md) | [Tasks, dependencies, and handoffs](docs/SHARED-TASKS.md) |
 | [Setup and scheduled coordination](docs/DEV-COORDINATION.md) | [Profiles and autonomy policies](docs/AUTONOMY.md) |
 | [Claude Code setup](docs/CLAUDE-CODE.md) | [Wake instructions](WAKE-PROMPT.md) |
+| [Share and reuse skills](docs/SHARED-SKILLS.md) | [Skill review, versions, and export](docs/SHARED-SKILLS.md#review-and-publish) |
 | [Contributing](CONTRIBUTING.md) | [Source provenance](PROVENANCE.md) and [rights](RIGHTS.md) |
 
 For development, run `npm test`. Tests use simulated storage. `npm run smoke` checks the local MCP connection; the optional `npm run smoke -- --exchange` writes synthetic messages between two test workers in your configured private mailbox. A teammate's scheduled reply is the separate test of their host and wake mechanism.
