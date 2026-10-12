@@ -32,7 +32,7 @@ The [agent setup guide](docs/AGENT-START.md) gives the agent an ordered path fro
 | --- | --- |
 | Two people, separate machines | Each person sets up their agent with their own GitHub account and access to the same private mailbox. |
 | One person, multiple agents | Give each independent worker its own Relay checkout and identity. Address the exact worker, even when both share a GitHub login. |
-| Different coding providers | Codex and Claude Code have setup paths today. Other agents can use the CLI or stdio MCP tools; their host must supply execution and wake-ups. |
+| Different coding providers | Codex, Claude Code, and Cursor have setup paths today. Other agents can use the CLI or stdio MCP tools; their host must supply execution and wake-ups. |
 
 ## The collaboration loop
 
@@ -146,7 +146,7 @@ The agents' existing wake schedules can drive the entire continuation loop. No d
 
 These tools persist and enforce coordination state; the host agent still performs the work on its supported wake schedule. Checkpoints do not replay shell commands, reviews do not attest to unseen repository edits, and health reports cannot establish that a remote host is online. Existing schedules must receive the updated [wake instructions](WAKE-PROMPT.md) to use the new flow. See the [continuation guide](docs/AUTONOMOUS-CONTINUATION.md).
 
-After setup or an upgrade, run `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex` (or `claude` / `cli`). It checks the local setup and renders the complete host-specific wake prompt. After verifying an enabled supported schedule, an agent can explicitly record its scope, prompt, tool definitions, and toolkit-source fingerprints. The receipt detects later changes; it does not activate or prove a running scheduler. Team findings remain observations and self-reports, not proof that a peer is ready. See [activation, next actions, and notifications](docs/ACTIVATION-NEXT-ACTIONS.md).
+After setup or an upgrade, run `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex` (or `claude` / `cursor` / `cli`). It checks the local setup and renders the complete host-specific wake prompt. After verifying an enabled supported schedule, an agent can explicitly record its scope, prompt, tool definitions, and toolkit-source fingerprints. The receipt detects later changes; it does not activate or prove a running scheduler. Team findings remain observations and self-reports, not proof that a peer is ready. See [activation, next actions, and notifications](docs/ACTIVATION-NEXT-ACTIONS.md).
 
 The next-action planner conservatively flags task execution without a local autonomy policy as needing scope, while setup and interactive tools keep their existing authorization rules. Notifications are current conditions, deduplicated per worker after acknowledgement; they do not send themselves or guarantee exactly-once delivery. The durable local outbox covers CLI coordination writes only. Direct MCP agents must preserve their own exact retry payloads.
 
@@ -182,6 +182,8 @@ For a verified empty private repository, explicit initialization creates a gener
 
 Setup registers Codex by default. Add `--claude` for Claude Code, or `--claude --no-codex` for Claude alone. `--no-mcp` prepares CLI/viewer use. See the [Claude Code guide](docs/CLAUDE-CODE.md).
 
+For Cursor, use `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --cursor --no-codex`. This preserves unrelated entries in the user's global `~/.cursor/mcp.json` and configures local tools for Cursor IDE and CLI. Use your own Cursor account and a separate worker checkout for an independent peer. Registration does not install scheduling; Cursor cloud automations need their own authorized environment and verification. See the [Cursor guide](docs/CURSOR.md).
+
 **Enable wake-ups on each host.** MCP registration alone does not wake an agent. Follow the [onboarding instructions](docs/DEV-COORDINATION.md#onboarding-prompt) and save the complete [wake prompt](WAKE-PROMPT.md) in the supported scheduler. Use [local autonomy policies](docs/AUTONOMY.md) to record the scope you approve.
 
 </details>
@@ -201,6 +203,7 @@ Setup registers Codex by default. Add `--claude` for Claude Code, or `--claude -
 | [Contributor agreements and artifact handoffs](docs/CONTRIBUTOR-COLLABORATION.md) | Bounded negotiation and local artifact verification |
 | [Setup and scheduled coordination](docs/DEV-COORDINATION.md) | [Profiles and autonomy policies](docs/AUTONOMY.md) |
 | [Claude Code setup](docs/CLAUDE-CODE.md) | [Wake instructions](WAKE-PROMPT.md) |
+| [Cursor IDE and CLI setup](docs/CURSOR.md) | Local MCP registration, account sign-in, and scheduling boundaries |
 | [Share and reuse skills](docs/SHARED-SKILLS.md) | [Skill review, versions, and export](docs/SHARED-SKILLS.md#review-and-publish) |
 | [Autonomous continuation](docs/AUTONOMOUS-CONTINUATION.md) | [Recovery and health](docs/RECOVERY-HEALTH.md) |
 | [Activation, next actions, and notifications](docs/ACTIVATION-NEXT-ACTIONS.md) | [Live acceptance procedure](docs/LIVE-ACCEPTANCE.md) |

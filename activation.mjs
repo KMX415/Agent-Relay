@@ -1,11 +1,13 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { readFile, readdir, mkdir, writeFile, rename, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { diagnose } from './doctor.mjs';
 import { run } from './github.mjs';
 import { tools } from './tools.mjs';
 import { register, serverName } from './register.mjs';
+import { inspectCursorEntry } from './cursor.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -26,12 +28,25 @@ export function renderWakePrompt(template, relayRoot, projectRoot) {
 }
 
 // No registration writes: the existing Claude parser is reused behind a read-only command gate.
-async function inspectClient(client, scope, execute, node) {
+async function inspectClient(client, scope, execute, node, read, userHome) {
   if(client==='cli')return true;
   const name=serverName(scope.repo),server=path.join(scope.relayRoot,'server.mjs');
   if(client==='codex') {
     const entry=JSON.parse(await execute('codex',['mcp','list','--json'])).find(item=>item.name===name);
     return !!entry?.enabled && entry.transport?.command===node && JSON.stringify(entry.transport?.args)===JSON.stringify([server]) && entry.transport?.env?.AGENT_MAILBOX_REPO===scope.repo;
+  }
+  if(client==='cursor') {
+    const readConfig=async filename=>{
+      let value;
+      try {const raw=await read(filename,'utf8');if(Buffer.byteLength(raw)>1024*1024)throw new Error('Cursor configuration too large');value=JSON.parse(raw.replace(/^\uFEFF/,''));}catch(error){if(error.code==='ENOENT')return {};throw error;}
+      if(!value||typeof value!=='object'||Array.isArray(value)||value.mcpServers!==undefined&&(!value.mcpServers||typeof value.mcpServers!=='object'||Array.isArray(value.mcpServers)))throw new Error('Invalid Cursor MCP configuration');
+      return value.mcpServers??{};
+    };
+    const global=await readConfig(path.join(userHome,'.cursor','mcp.json'));
+    const project=await readConfig(path.join(scope.projectRoot,'.cursor','mcp.json'));
+    // A project entry shadows the global entry even when it is disabled or wrong.
+    const entry=Object.hasOwn(project,name)?project[name]:global[name];
+    return inspectCursorEntry(entry,{name,repo:scope.repo,node,server})==='matches';
   }
   await register(async(command,args)=>{
     if(command!=='claude'||args[0]!=='mcp'||args[1]!=='get')throw new Error('Registration missing');
@@ -42,10 +57,10 @@ async function inspectClient(client, scope, execute, node) {
 
 export async function planActivation({projectRoot,client='codex'}={}, {
   relayRoot=root, read=readFile, listSources=readdir, inspectPath=stat, diagnosis=diagnose, execute=run,
-  toolSurface=tools, node=process.execPath
+  toolSurface=tools, node=process.execPath, userHome=homedir()
 }={}) {
   relayRoot=absolute(relayRoot,'relay root');projectRoot=absolute(projectRoot,'project root');
-  if(!['codex','claude','cli'].includes(client))throw new Error('Client must be codex, claude, or cli');
+  if(!['codex','claude','cursor','cli'].includes(client))throw new Error('Client must be codex, claude, cursor, or cli');
   const template=await read(path.join(relayRoot,'WAKE-PROMPT.md'),'utf8');
   const wakePrompt=renderWakePrompt(template,relayRoot,projectRoot);
   const promptHash=hash(wakePrompt),toolsHash=hash(JSON.stringify(toolSurface));
@@ -77,7 +92,7 @@ export async function planActivation({projectRoot,client='codex'}={}, {
     }catch {checks.push({name:'activation_identity',ok:false,detail:'Cannot bind activation to the saved worker'});}
   }
   if(scope) {
-    try {if(!await inspectClient(client,scope,execute,node))throw new Error();checks.push({name:'client',ok:true,detail:client==='cli'?'CLI selected; host still supplies wake-ups':'Exact MCP registration matches this checkout and mailbox'});}
+    try {if(!await inspectClient(client,scope,execute,node,read,userHome))throw new Error();checks.push({name:'client',ok:true,detail:client==='cli'?'CLI selected; host still supplies wake-ups':client==='cursor'?'Effective Cursor MCP configuration matches this checkout and mailbox. Tool approval, live connection, and scheduling are not verified.':'Exact MCP registration matches this checkout and mailbox'});}
     catch {checks.push({name:'client',ok:false,detail:'Client registration is missing, different, disabled, or unreadable; inspect it before setup'});}
   }
   let receiptStatus='missing',receipt=null;
@@ -91,7 +106,7 @@ export async function planActivation({projectRoot,client='codex'}={}, {
   return {ready:!!scope&&checks.every(c=>c.ok),scope,scopeHash:scope?hash(JSON.stringify(scope)):null,checks,promptHash,toolsHash,toolkitHash,wakePrompt,receiptStatus,receipt,
     team:diagnostics.team??null,
     peerReadinessNote:'Team findings are shared-state observations and worker self-reports, including stale records. They do not verify peer presence, reachability, scheduled execution, or an actual exchange. Local ready status does not mean the peer is ready.',
-    nextSteps:receiptStatus==='current'?['Inspect the supported host scheduler to confirm it remains enabled; a saved receipt is not live verification.']:['Resolve failed checks.','Inspect existing supported host schedules; save this complete wake prompt in the matching schedule within user-authorized scope.','After observing the enabled schedule, explicitly record its ID, evidence, and these hashes.'],
+    nextSteps:client==='cursor'?['Resolve failed configuration checks, including any project .cursor/mcp.json override.','Inspect Cursor MCP settings and tool approvals, then test the intended connection; matching configuration is not proof of either.','Use a user-authorized supported host wake mechanism only if available. Cursor MCP configuration does not establish a scheduler.','Record a receipt only after independently observing an enabled supported schedule with this complete prompt and current hashes.']:receiptStatus==='current'?['Inspect the supported host scheduler to confirm it remains enabled; a saved receipt is not live verification.']:['Resolve failed checks.','Inspect existing supported host schedules; save this complete wake prompt in the matching schedule within user-authorized scope.','After observing the enabled schedule, explicitly record its ID, evidence, and these hashes.'],
     note:'Read-only plan. No worker, registration, policy, or schedule is created. Receipts record a local self-reported observation, not proof of a live scheduler or peer response.'};
 }
 
@@ -131,12 +146,12 @@ if(process.argv[1]===fileURLToPath(import.meta.url)) {
       const arg=process.argv[i];
       if(arg==='--record'){record=true;continue;}
       if(arg==='--schedule-verified'){options.scheduleVerified=true;continue;}
-      if(!names[arg]||!process.argv[i+1]||process.argv[i+1].startsWith('--'))throw new Error('Use --project ABSOLUTE_PATH [--client codex|claude|cli]; recording also requires --record --schedule-verified --schedule-id ID --evidence TEXT --prompt-hash HASH --tools-hash HASH --toolkit-hash HASH --scope-hash HASH');
+      if(!names[arg]||!process.argv[i+1]||process.argv[i+1].startsWith('--'))throw new Error('Use --project ABSOLUTE_PATH [--client codex|claude|cursor|cli]; recording also requires --record --schedule-verified --schedule-id ID --evidence TEXT --prompt-hash HASH --tools-hash HASH --toolkit-hash HASH --scope-hash HASH');
       if(options[names[arg]]!==undefined)throw new Error('Duplicate argument');
       options[names[arg]]=process.argv[++i];
     }
     if(!record&&Object.keys(options).some(key=>!['projectRoot','client'].includes(key)))throw new Error('Receipt arguments require --record');
     const result=record?await recordActivation(options):await planActivation(options);
     console.log(JSON.stringify(result,null,2));if(result.ready===false)process.exitCode=1;
-  } catch {console.error('Activation failed. Supply an absolute --project and valid --client; inspect local configuration. Recording requires passed checks, verified schedule evidence, and current scope/prompt/tools/toolkit hashes. No schedule was changed.');process.exitCode=1;}
+  } catch {console.error('Activation failed. Supply an absolute --project and --client codex|claude|cursor|cli; inspect local configuration. Recording requires passed checks, verified schedule evidence, and current scope/prompt/tools/toolkit hashes. No schedule was changed.');process.exitCode=1;}
 }

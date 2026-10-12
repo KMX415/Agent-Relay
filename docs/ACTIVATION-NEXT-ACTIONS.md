@@ -10,9 +10,11 @@ After [setup](AGENT-START.md), run this from the Relay checkout with the absolut
 node activation.mjs --project "/absolute/path/to/project" --client codex
 ```
 
-Use `--client claude` for Claude Code or `--client cli` for a worker using the CLI. The default is `codex`. On Windows, a project argument can be `"C:/Users/you/your-project"`.
+Use `--client claude` for Claude Code, `--client cursor` for Cursor, or `--client cli` for a worker using the Relay CLI without client registration checks. The default is `codex`. On Windows, a project argument can be `"C:/Users/you/your-project"`.
 
 This read-only plan checks dependencies, private mailbox access, the saved worker, the development directory, and the selected client's exact MCP registration. CLI mode skips registration checks. It checks a configured local autonomy policy for validity and expiry; a missing optional policy does not fail setup or authorize work.
+
+Cursor mode checks global `~/.cursor/mcp.json` and any override in the selected project's `.cursor/mcp.json`, comparing the effective command, arguments, and mailbox environment. It does not inspect every ancestor or nested client configuration or verify client approval, account model access, or a live MCP invocation. Follow the [Cursor guide](CURSOR.md) to inspect the active client and perform a bounded read test with the saved worker. Local registration is separate from Cursor Cloud Agent automation setup; local paths and authentication are not automatically provisioned in a cloud execution environment. No client mode installs a scheduler.
 
 The JSON output contains:
 

@@ -1,7 +1,8 @@
-// MCP registration for the agent clients Agent Relay supports. Codex stays the default; Claude Code is added on request
-// (--claude), never instead of Codex unless --no-codex is also given. `run` is injected so tests need neither CLI.
+// Codex stays the default; --claude and --cursor add clients explicitly.
+// --no-codex skips that default. `run` is injected for command-based clients.
 
-export const CLIENTS = ['codex', 'claude'];
+import { registerCursor } from './cursor.mjs';
+export const CLIENTS = ['codex', 'claude', 'cursor'];
 
 export function serverName(repo) {
   return 'agent-relay-' + repo.toLowerCase().replace('/', '--');
@@ -59,6 +60,10 @@ export async function register(run, clients, opts) {
   for (const client of clients) {
     if (client === 'codex') out.push(await registerCodex(run, opts));
     else if (client === 'claude') out.push(await registerClaude(run, opts));
+    else if (client === 'cursor') {
+      const result=await registerCursor(opts,{configPath:opts.cursorConfigPath});
+      out.push('Cursor: MCP registration '+(result.status==='matches'?'already matches':'created')+' ('+result.configPath+'). Restart Cursor or reload its MCP servers.');
+    }
     else throw new Error('Unknown MCP client ' + client);
   }
   return out;

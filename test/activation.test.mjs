@@ -116,3 +116,70 @@ test('an existing stale lock is never automatically removed or replaced',async()
     await assert.rejects(readFile(path.join(directory,'runtime','activation.json')),{code:'ENOENT'});
   }finally {await rm(directory,{recursive:true,force:true});}
 });
+
+const cursorName='agent-relay-owner--box';
+const cursorEntry=()=>({type:'stdio',command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}});
+function cursorFixture(global,project) {
+  const f=fixture(),originalRead=f.deps.read,reads=[];
+  f.deps.userHome=path.resolve('cursor-user-fixture');
+  const globalPath=path.join(f.deps.userHome,'.cursor','mcp.json'),projectPath=path.join(projectRoot,'.cursor','mcp.json');
+  f.deps.read=async(filename,...args)=>{
+    reads.push(filename);
+    if(filename===globalPath||filename===projectPath) {
+      const config=filename===globalPath?global:project;
+      if(config===undefined)throw Object.assign(new Error('missing'),{code:'ENOENT'});
+      if(config instanceof Error)throw config;
+      return typeof config==='string'?config:JSON.stringify(config);
+    }
+    return originalRead(filename,...args);
+  };
+  return {...f,reads,globalPath,projectPath};
+}
+test('Cursor activation reads injected global and project configuration without client commands',async()=>{
+  const f=cursorFixture({mcpServers:{[cursorName]:cursorEntry()}},{mcpServers:{unrelated:{command:'different'}}});
+  const plan=await planActivation({projectRoot,client:'cursor'},f.deps);
+  assert.equal(plan.ready,true);assert.equal(plan.scope.client,'cursor');assert.deepEqual(f.calls,[]);
+  assert.ok(f.reads.includes(f.globalPath));assert.ok(f.reads.includes(f.projectPath));
+  assert.match(plan.checks.find(c=>c.name==='client').detail,/Tool approval, live connection, and scheduling are not verified/);
+  assert.match(plan.nextSteps.join(' '),/does not establish a scheduler/);
+  assert.equal(plan.receiptStatus,'missing');
+});
+test('Cursor project entries shadow global registration including command args environment and disabled mismatches',async()=>{
+  for(const changed of [
+    {...cursorEntry(),command:'different-node'},
+    {...cursorEntry(),args:[path.join(relayRoot,'server.mjs'),'extra']},
+    {...cursorEntry(),env:{AGENT_MAILBOX_REPO:'owner/box-other'}},
+    {...cursorEntry(),disabled:true},
+    {...cursorEntry(),enabled:false},
+    {...cursorEntry(),envFile:'SECRET.env'},
+    null,
+  ]) {
+    const f=cursorFixture({mcpServers:{[cursorName]:cursorEntry()}},{mcpServers:{[cursorName]:changed}});
+    const plan=await planActivation({projectRoot,client:'cursor'},f.deps);
+    assert.equal(plan.ready,false);assert.deepEqual(f.calls,[]);assert.doesNotMatch(JSON.stringify(plan),/SECRET/);
+  }
+  const override=cursorFixture({mcpServers:{[cursorName]:{...cursorEntry(),command:'old-node'}}},{mcpServers:{[cursorName]:cursorEntry()}});
+  assert.equal((await planActivation({projectRoot,client:'cursor'},override.deps)).ready,true);
+  const onlyProject=cursorFixture(undefined,{mcpServers:{[cursorName]:cursorEntry()}});
+  assert.equal((await planActivation({projectRoot,client:'cursor'},onlyProject.deps)).ready,true);
+});
+test('Cursor activation handles missing malformed and unreadable config without leaking configuration',async()=>{
+  for(const [global,project] of [
+    [undefined,undefined],
+    ['{SECRET malformed',{mcpServers:{[cursorName]:cursorEntry()}}],
+    [{mcpServers:{[cursorName]:cursorEntry()}},{mcpServers:[]}],
+    [{mcpServers:{[cursorName]:cursorEntry()}},Object.assign(new Error('SECRET private config'),{code:'EACCES'})],
+  ]) {
+    const f=cursorFixture(global,project),plan=await planActivation({projectRoot,client:'cursor'},f.deps);
+    assert.equal(plan.ready,false);assert.doesNotMatch(JSON.stringify(plan),/SECRET/);assert.deepEqual(f.calls,[]);
+  }
+});
+
+test('Cursor activation accepts a leading UTF-8 BOM in global and project JSON',async()=>{
+  const matching='\uFEFF'+JSON.stringify({mcpServers:{[cursorName]:cursorEntry()}});
+  for(const [global,project] of [[matching,undefined],[{},matching],[matching,matching]]) {
+    const f=cursorFixture(global,project);
+    assert.equal((await planActivation({projectRoot,client:'cursor'},f.deps)).ready,true);
+    assert.deepEqual(f.calls,[]);
+  }
+});
