@@ -8,6 +8,8 @@ The Agent Relay checkout holds the tools and ignored runtime state. The developm
 
 The owner runs `npm ci`, then `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --initialize`. Teammates run the same command without `--initialize`. Setup saves `runtime/config.json` and `runtime/mailbox-worker.json`, and registers a server named `agent-relay-owner--private-mailbox`. Existing different registrations are not overwritten. `--no-mcp` prepares CLI/viewer use without registering Codex. `--claude` also registers the server with Claude Code (`--no-codex` skips Codex); see [CLAUDE-CODE.md](CLAUDE-CODE.md). `AGENT_MAILBOX_REPO` overrides saved configuration; the CLI rejects mismatched saved worker identities.
 
+When explicit initialization verifies that the existing private repository is empty, it seeds a generic README on the default branch before creating the mailbox's separate orphan branch. Existing default-branch contents are not overwritten. The README enables GitHub reference creation; mailbox records still stay on `dev-agent-mailbox` and must never be merged into a code branch.
+
 Restart MCP servers in Codex settings or reopen the app. `npm run smoke` verifies the real stdio connection. `npm run smoke -- --exchange` additionally writes synthetic messages between two test workers. This does not verify a teammate's computer or scheduler.
 
 ## Onboarding prompt
@@ -17,6 +19,8 @@ Fill in the three placeholders and give this to each developer's Codex in the ta
 > Set up Agent Relay from RELAY_ROOT for development in PROJECT_ROOT, using private mailbox OWNER/PRIVATE-MAILBOX and my own GitHub account. Follow Agent Relay's docs/DEV-COORDINATION.md. Install dependencies and run setup.mjs, initialize storage only if I am its designated owner, and verify the MCP smoke test. Enable a five-minute heartbeat on this task using the supported Codex automation tool and the complete WAKE-PROMPT.md instructions, with RELAY_ROOT and PROJECT_ROOT replaced by absolute paths. Inspect existing automations first and update a matching one rather than creating duplicates. This authorizes project-scoped agent messages, handling development handoffs, relevant tests, feature branches, and draft PRs; it does not authorize main merges, deployments, hardware flashing, or unrelated work. Report whether the automation was actually enabled. Interactive authentication stays with me; do not request my token.
 
 Keep the full wake instructions in the saved automation prompt. The automation itself is local app state, not a file you can activate by cloning Git. Each computer must enable its own heartbeat. If the supported tool is unavailable, use the Codex automation UI; do not claim a working wake mechanism or create a shell-loop workaround.
+
+Use `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex` after setup and upgrades (`claude` or `cli` for those workers). The read-only plan checks the local setup and exact registration, renders the full prompt with host paths, and detects changed prompts, tool definitions, and toolkit source. Its team findings are observations and self-reports, not verification of peer presence. After observing the intended enabled host schedule, explicitly record its ID, evidence, and the current scope/prompt/tool/toolkit hashes. This saves an ignored local receipt, not a schedule. See [activation, next actions, and notifications](ACTIVATION-NEXT-ACTIONS.md) for flags, receipt locking, upgrade handling, and limits.
 
 Run `node cli.mjs team_status` from RELAY_ROOT to discover workers. Send a question to the other worker with a stable request_id and ask for receipt confirmation. Verify the reply arrives on a scheduled check. An active registration is not proof that the other agent is currently running.
 
@@ -30,10 +34,13 @@ The viewer shows all retained history, newest first, with sender/recipient label
 
 For recovery, automatic routing, bounded review cycles, skill improvement, and
 read-only diagnosis, see [autonomous continuation](AUTONOMOUS-CONTINUATION.md).
-Use `get_recovery` at the start of a wake, then continue through the appropriate
-tools within the user's authorized scope. `npm run doctor` diagnoses local setup;
+Reconcile uncertain local coordination writes, then use `next_actions` at the start of a wake for prioritized suggestions, reasons, current revisions, and limits. Inspect `get_recovery` and the suggested read tools before continuing within the user's authorized scope. Missing or unreadable local policy conservatively blocks the planner's task execution suggestions; setup and interactive tools retain their existing authorization rules. `npm run doctor` diagnoses local setup;
 `node cli.mjs team_health` reads team findings without registering a worker.
 These workflows use the existing host schedules and do not depend on the viewer.
+
+`list_notifications` reads current meaningful results, decisions, and relevant stale health conditions. Report useful items through an authorized host channel, then use `acknowledge_notification` with the exact event ID. Reading never sends or acknowledges; receipts deduplicate per worker, and delivery can repeat after a crash. A resolved condition may disappear before it is delivered. This is not a complete event history or an external notification service.
+
+The CLI durably records supported coordination writes in its local outbox. Inspect the [recovery guide](RECOVERY-HEALTH.md) before `node cli.mjs resume_outbox`. The shared next-action queue cannot see pending local writes, and direct MCP clients do not use that CLI outbox: preserve exact payloads and stable retry keys in the calling agent. No recovery record replays shell commands or proves external actions succeeded.
 
 Available tools: `join_team`, `team_status`, `check_inbox`, `send_message`, `acknowledge_message`, `claim_work`, `release_work`. Scheduled workers reuse their saved identity. Additional interactive tasks may join separately.
 

@@ -1,3 +1,5 @@
+import { nextActions } from './next-actions.mjs';
+import { listNotifications, acknowledgeNotification } from './notifications.mjs';
 import { randomUUID } from 'node:crypto';
 import { createTask, listTasks, getTask, updateTask } from './tasks.mjs';
 import { updateAgent, findAgents, checkTask, profileView } from './coordination.mjs';
@@ -19,6 +21,9 @@ const overlap = (a,b) => a === b || a.startsWith(b+'/') || b.startsWith(a+'/');
 const recipient = (m, a) => m.to === a.id || m.to.toLowerCase() === a.owner.toLowerCase() || m.to === 'team';
 
 export class Mailbox {
+  nextActions = nextActions;
+  listNotifications = listNotifications;
+  acknowledgeNotification = acknowledgeNotification;
   routeTask = routeTask;
   startReviewCycle = startReviewCycle;
   getReviewCycle = getReviewCycle;
