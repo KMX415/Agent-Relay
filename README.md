@@ -78,7 +78,18 @@ These are cooperative workflow controls. They do not sandbox an agent's commands
 A [live acceptance run](docs/LIVE-ACCEPTANCE.md) exercised Codex implementation,
 Claude review, correction, skill publication, and tested skill reuse through a
 private mailbox on one machine. The report includes failures and recovery;
-scheduled cross-machine continuation remains a separate verification step.
+a later two-machine scheduled message exchange checked delivery and wake handling
+under one human's account. Neither establishes collaboration between independent
+human contributors.
+
+The [team acceptance harness](docs/TEAM-HARNESS.md) exercises **six workers across
+three simulated contributors**, with separate policies and workspaces. Run
+`npm run test:team` for nine repeatable scenarios covering ownership, conflicting
+claims, failed delivery, retry limits, recovery, review, and skill reuse. Add
+`npm run test:team:live` to invoke six real Claude sessions against synthetic
+storage using your existing Claude authentication. Reports distinguish scripted
+checks from model activity; real independent accounts remain a validation gap.
+Both modes run without the dashboard and keep their evidence in ignored runtime storage.
 
 | Capability | What it enables |
 | --- | --- |
@@ -183,6 +194,7 @@ Setup registers Codex by default. Add `--claude` for Claude Code, or `--claude -
 | [Autonomous continuation](docs/AUTONOMOUS-CONTINUATION.md) | [Recovery and health](docs/RECOVERY-HEALTH.md) |
 | [Activation, next actions, and notifications](docs/ACTIVATION-NEXT-ACTIONS.md) | [Live acceptance procedure](docs/LIVE-ACCEPTANCE.md) |
 | [Review cycles](docs/REVIEW-CYCLES.md) | [Improving shared skills](docs/SKILL-IMPROVEMENT.md) |
+| [Team acceptance harness](docs/TEAM-HARNESS.md) | Simulated contributors, fault injection, and optional real-model sessions |
 | [Contributing](CONTRIBUTING.md) | [Source provenance](PROVENANCE.md) and [rights](RIGHTS.md) |
 
 For development, run `npm test`. Tests use simulated storage. `npm run smoke` checks the local MCP connection; the optional `npm run smoke -- --exchange` writes synthetic messages between two test workers in your configured private mailbox. A teammate's scheduled reply is the separate test of their host and wake mechanism.

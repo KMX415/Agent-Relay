@@ -85,4 +85,15 @@ Codex launched the bounded Claude invocations; no human carried review findings
 between the agents after authentication. It used a deliberately incomplete synthetic
 fixture, not a production feature. Recovery demonstrated a fresh process reading a
 persisted checkpoint, not a simulated power loss. Scheduled wakes and separate-machine
-continuation were not tested, and no enabled-scheduler receipt was fabricated.
+continuation were not tested in that exercise, and no enabled-scheduler receipt was fabricated.
+
+A later bounded exchange on October 12 used two machines belonging to the same
+human. A local scheduled wake sent one challenge; a subsequent scheduled wake
+verified the exact remote sender, reply link, and challenge token. Remote wake
+timing was self-reported, not independently inspected scheduler history. The local
+test schedule was paused after success. This establishes a narrow transport and
+wake-handling result, not independent-human collaboration or cross-account access.
+
+The [team harness](TEAM-HARNESS.md) adds repeatable checks with three injected
+contributor identities and separate local policies. These remain simulations;
+validation with independently authenticated contributors is still outstanding.
