@@ -1,3 +1,7 @@
+import { rankSkills, getSkillValidations, recordSkillValidation } from './skill-selection.mjs';
+import { requestPeerHelp, advancePeerHelp, getPeerHelp, listPeerHelp } from './peer-help.mjs';
+import { createGoal, getGoal, listGoals, updateGoal, reserveGoalUsage, settleGoalUsage } from './goals.mjs';
+import { beginWorkerRun, finishWorkerRun, listWorkerRuns, archiveWorkerRun } from './worker-runs.mjs';
 import { nextActions } from './next-actions.mjs';
 import { setCollaborationAgreement, revokeCollaborationAgreement, listCollaborationAgreements, proposeNegotiation, advanceNegotiation, getNegotiation, listNegotiations } from './collaboration.mjs';
 import { createHandoff, getHandoff, listHandoffs, recordHandoffVerification } from './handoffs.mjs';
@@ -23,6 +27,23 @@ const overlap = (a,b) => a === b || a.startsWith(b+'/') || b.startsWith(a+'/');
 const recipient = (m, a) => m.to === a.id || m.to.toLowerCase() === a.owner.toLowerCase() || m.to === 'team';
 
 export class Mailbox {
+  rankSkills = rankSkills;
+  getSkillValidations = getSkillValidations;
+  recordSkillValidation = recordSkillValidation;
+  requestPeerHelp = requestPeerHelp;
+  advancePeerHelp = advancePeerHelp;
+  getPeerHelp = getPeerHelp;
+  listPeerHelp = listPeerHelp;
+  createGoal = createGoal;
+  getGoal = getGoal;
+  listGoals = listGoals;
+  updateGoal = updateGoal;
+  reserveGoalUsage = reserveGoalUsage;
+  settleGoalUsage = settleGoalUsage;
+  beginWorkerRun = beginWorkerRun;
+  finishWorkerRun = finishWorkerRun;
+  listWorkerRuns = listWorkerRuns;
+  archiveWorkerRun = archiveWorkerRun;
   setCollaborationAgreement = setCollaborationAgreement;
   revokeCollaborationAgreement = revokeCollaborationAgreement;
   listCollaborationAgreements = listCollaborationAgreements;

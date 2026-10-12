@@ -1,3 +1,4 @@
+import { assertGoalTask } from './goals.mjs';
 import { randomUUID } from 'node:crypto';
 import { boundedText, strings, relativePath, taskKinds, within, eligibility } from './coordination.mjs';
 
@@ -68,10 +69,11 @@ function page(all,after,limit,key) {
   const items=all.slice(after,after+limit);return {[key]:items,nextAfter:after+items.length,hasMore:after+items.length<all.length};
 }
 
-export async function proposeNegotiation({agent_id,recipient_id,work_id,terms,deadline,max_rounds=3,request_id}) {
+export async function proposeNegotiation({agent_id,recipient_id,work_id,terms,deadline,max_rounds=3,request_id,goal_id}) {
   request_id=text(request_id,'request_id',120);work_id=text(work_id,'work_id',120);terms=termsView(terms);deadline=timestamp(deadline,'deadline');
   if(!Number.isInteger(max_rounds)||max_rounds<1||max_rounds>5)throw new Error('Negotiation requires 1-5 rounds');
-  const fingerprint=JSON.stringify({recipient_id,work_id,terms,deadline,max_rounds}),id=randomUUID();
+  if(goal_id!==undefined)goal_id=text(goal_id,'goal_id',150);
+  const fingerprint=JSON.stringify({recipient_id,work_id,terms,deadline,max_rounds,...(goal_id?{goal_id}:{})}),id=randomUUID();
   return this.change(state=>{
     const actor=this.actor(state,agent_id),all=state.negotiations??=[];
     const old=all.find(n=>n.requesterId===agent_id && n.requestId===request_id);
@@ -81,9 +83,10 @@ export async function proposeNegotiation({agent_id,recipient_id,work_id,terms,de
     if(Date.parse(deadline)<=this.now())throw new Error('Negotiation deadline must be in the future');
     if(all.some(n=>n.requesterOwner===actor.owner && n.workId===work_id))throw new Error('Work already has a negotiation; do not reset its budget');
     if(all.length>=200)throw new Error('Negotiation registry full');
-    const n={id,workId:work_id,requesterId:agent_id,recipientId:recipient_id,requesterOwner:actor.owner,performerOwner:peer.owner,
+    const n={id,...(goal_id?{goalId:goal_id}:{}),workId:work_id,requesterId:agent_id,recipientId:recipient_id,requesterOwner:actor.owner,performerOwner:peer.owner,
       terms,deadline,maxRounds:max_rounds,round:1,offeredBy:agent_id,status:'proposed',revision:1,requestId:request_id,fingerprint,
       createdAt:this.now(),updatedAt:this.now(),history:[{actorId:agent_id,offeredBy:agent_id,action:'propose',terms:structuredClone(terms),round:1,createdAt:this.now()}]};
+    assertGoalTask(state,taskFor(n,'pending',this.now()),actor,this.now(),'create');
     all.push(n);return n;
   });
 }
@@ -98,7 +101,7 @@ export async function listNegotiations({agent_id,after=0,limit=30}) {
   return page((state.negotiations??[]).filter(n=>[n.requesterId,n.recipientId].includes(agent_id)),after,limit,'negotiations');
 }
 function taskFor(n,id,now) {
-  return {id,...structuredClone(n.terms),createdBy:n.requesterId,assigneeId:n.recipientId,dependsOn:[],parentTaskId:null,
+  return {id,...(n.goalId?{goalId:n.goalId}:{}),...structuredClone(n.terms),createdBy:n.requesterId,assigneeId:n.recipientId,dependsOn:[],parentTaskId:null,
     requestId:'negotiation-'+n.id,fingerprint:termKey(n.terms),status:'ready',revision:1,chainDepth:0,handoffCount:0,
     createdAt:now,updatedAt:now,history:[],negotiationId:n.id};
 }
@@ -121,16 +124,18 @@ export async function advanceNegotiation({agent_id,negotiation_id,expected_revis
       if(n.offeredBy===agent_id)throw new Error('Wait for other participant to respond to latest offer');
       if(action==='counter') {
         if(n.round>=n.maxRounds)throw new Error('Negotiation round budget exhausted; decision required');
+        assertGoalTask(state,taskFor({...n,terms},'pending',this.now()),actor,this.now(),'create');
         n.round++;n.terms=terms;n.offeredBy=agent_id;n.status='proposed';
       } else if(action==='accept') {
         const agreements=agreementsFor(state,n.requesterOwner,n.performerOwner,n.terms,this.now());
         const task=taskFor(n,taskId,this.now());
+        assertGoalTask(state,task,actor,this.now(),'create');
         if(!policy)throw new Error('Local autonomy policy required to accept negotiated work');
         // A requester can approve a performer counter only within its own scope.
         // The recipient still checks its independent policy when accepting task.
         const localTask={...task,assigneeId:actor.id,requiredCapabilities:agent_id===n.recipientId?task.requiredCapabilities:[]};
         delete localTask.negotiationId;
-        const decision=eligibility(state,actor,localTask,policy,this.now());
+        const decision=eligibility(state,actor,localTask,policy,this.now(),{goalExecution:false});
         if(!decision.allowed)throw new Error(decision.reasons.join('; '));
         const tasks=state.tasks??=[];if(tasks.length>=500)throw new Error('Task registry full');
         n.status='accepted';n.taskId=task.id;n.agreementIds=agreements.map(a=>a.id);n.acceptedTermsKey=termKey(n.terms);
@@ -150,7 +155,7 @@ export function assertCollaborationTaskAction(state,task,actor,policy,now,action
   const n=(state.negotiations??[]).find(n=>n.id===task.negotiationId);
   if(!n || n.status!=='accepted' || n.taskId!==task.id || n.recipientId!==task.assigneeId || n.requesterId!==task.createdBy ||
      state.agents[n.recipientId]?.owner!==n.performerOwner || state.agents[n.requesterId]?.owner!==n.requesterOwner ||
-     termKey(task)!==n.acceptedTermsKey || termKey(n.terms)!==n.acceptedTermsKey || actor.id!==n.recipientId)throw new Error('Negotiated task terms or worker binding changed');
+     (task.goalId??null)!==(n.goalId??null) || termKey(task)!==n.acceptedTermsKey || termKey(n.terms)!==n.acceptedTermsKey || actor.id!==n.recipientId)throw new Error('Negotiated task terms or worker binding changed');
   const current=agreementsFor(state,n.requesterOwner,n.performerOwner,n.terms,now);
   if(!Array.isArray(n.agreementIds) || current.some(a=>!n.agreementIds.includes(a.id)))throw new Error('Accepted collaboration agreement replaced or revoked');
   if(!policy)throw new Error('Local autonomy policy required for negotiated execution');
@@ -164,7 +169,7 @@ export const collaborationTools=[
   tool('set_collaboration_agreement','Record owner-authorized directional scope. This shared declaration never grants local execution permission or changes policy.',{...actor,peer_owner:str,allowed_kinds:arr,allowed_paths:arr,expires_at:str,request_id:str},['agent_id','peer_owner','allowed_kinds','allowed_paths','expires_at','request_id']),
   tool('revoke_collaboration_agreement','Owner revokes a directional agreement. Negotiated execution stops; records remain.',{...mutation,agreement_id:str},['agent_id','agreement_id','expected_revision','request_id','summary']),
   tool('list_collaboration_agreements','Read agreements involving your contributor. Expired/revoked records remain evidence.',{...actor,after:{type:'integer',minimum:0},limit:integer},['agent_id'],true),
-  tool('propose_negotiation','Propose bounded work to an exact worker of another contributor. work_id must identify the same work across retries; never invent a new ID to reset limits.',{...actor,recipient_id:str,work_id:str,terms:termSchema,deadline:str,max_rounds:{...integer,maximum:5},request_id:str},['agent_id','recipient_id','work_id','terms','deadline','request_id']),
+  tool('propose_negotiation','Propose bounded work to an exact worker of another contributor. work_id must identify the same work across retries; never invent a new ID to reset limits.',{...actor,recipient_id:str,work_id:str,goal_id:str,terms:termSchema,deadline:str,max_rounds:{...integer,maximum:5},request_id:str},['agent_id','recipient_id','work_id','terms','deadline','request_id']),
   tool('advance_negotiation','Counter or respond to latest other-side offer. Acceptance creates ready work, never executes it. Defer preserves deadline and rounds.',{...mutation,negotiation_id:str,action:{...str,enum:['counter','accept','decline','defer','cancel']},terms:termSchema},['agent_id','negotiation_id','expected_revision','request_id','action','summary']),
   tool('get_negotiation','Inspect exact negotiation, terms, budget and task reference.',{...actor,negotiation_id:str},['agent_id','negotiation_id'],true),
   tool('list_negotiations','List negotiations for your exact worker; follow pagination.',{...actor,after:{type:'integer',minimum:0},limit:integer},['agent_id'],true),

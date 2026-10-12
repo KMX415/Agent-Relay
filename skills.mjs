@@ -41,7 +41,7 @@ function revision(skill, expected) {
   if (skill.revision !== expected) throw new Error('Skill revision changed; read skill before updating');
 }
 function retry(skill, actorId, requestId, fingerprint) {
-  const old = [...skill.reviews,...skill.uses,...skill.history].find(e => e.actorId === actorId && e.requestId === requestId);
+  const old = [...skill.reviews,...skill.uses,...skill.history,...(skill.validationReports??[])].find(e => e.actorId === actorId && e.requestId === requestId);
   if (!old) return false;
   if (old.fingerprint !== fingerprint) throw new Error('request_id already used for different content');
   return true;

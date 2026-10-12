@@ -1,3 +1,4 @@
+import { assertGoalTask } from './goals.mjs';
 import { randomUUID } from 'node:crypto';
 import { taskKinds, relativePath, eligibility } from './coordination.mjs';
 import { assertTaskReviewAction } from './review-cycles.mjs';
@@ -19,7 +20,7 @@ const known = (state, id) => {
 };
 
 export async function createTask({agent_id, title, description, acceptance, assignee_id, depends_on = [], request_id,
-  kind='implementation', paths=[], required_capabilities=[], parent_task_id}) {
+  kind='implementation', paths=[], required_capabilities=[], parent_task_id, goal_id}) {
   title = text(title, 'title', 200); description = text(description, 'description');
   acceptance = list(acceptance, 'acceptance');
   if (!acceptance.length) throw new Error('Specify acceptance criteria');
@@ -28,7 +29,7 @@ export async function createTask({agent_id, title, description, acceptance, assi
   paths=list(paths,'paths').map(relativePath);
   required_capabilities=list(required_capabilities,'capabilities').map(c=>c.toLowerCase());
   const payload = {title, description, acceptance, assigneeId:assignee_id ?? null, dependsOn:depends_on,
-    kind,paths,requiredCapabilities:[...new Set(required_capabilities)],parentTaskId:parent_task_id??null};
+    kind,paths,requiredCapabilities:[...new Set(required_capabilities)],parentTaskId:parent_task_id??null,...(goal_id?{goalId:text(goal_id,'goal_id',150)}:{})};
   const policy=await this.readPolicy();
   const fingerprint = JSON.stringify(payload), id = randomUUID();
   return this.change(state => {
@@ -43,11 +44,13 @@ export async function createTask({agent_id, title, description, acceptance, assi
     if (depends_on.some(dep => !tasks.some(t => t.id === dep))) throw new Error('Unknown dependency');
     const parent=parent_task_id ? tasks.find(t=>t.id===parent_task_id) : null;
     if (parent_task_id && !parent) throw new Error('Parent task not found');
+    if(parent?.goalId) { if(goal_id && goal_id!==parent.goalId) throw new Error('Child task must retain parent goal'); payload.goalId=parent.goalId; }
     const chainDepth=parent?(parent.chainDepth??0)+1:0;
     if (policy && chainDepth>policy.max_chain_depth) throw new Error('Task chain depth exceeds policy; ask the user');
     const now = this.now();
     const task = {id, ...payload, createdBy:agent_id, requestId:request_id, fingerprint,
       status:'ready', revision:1, createdAt:now, updatedAt:now, chainDepth,handoffCount:0,history:[]};
+    assertGoalTask(state,task,actor,now,'create');
     tasks.push(task); actor.seenAt = now; return task;
   });
 }
@@ -71,7 +74,7 @@ export async function getTask({agent_id, task_id}) {
 export async function updateTask({agent_id, task_id, expected_revision, request_id, action, summary, assignee_id, artifacts = [], next_steps = [], handoff_id}) {
   request_id = text(request_id, 'request_id', 120); summary = text(summary, 'summary');
   artifacts = list(artifacts, 'artifacts'); next_steps = list(next_steps, 'next_steps');
-  if (!['assign', 'accept', 'progress', 'block', 'resume', 'handoff', 'complete', 'cancel'].includes(action)) throw new Error('Invalid task action');
+  if (!['assign', 'accept', 'progress', 'block', 'resume', 'handoff', 'complete', 'cancel', 'evidence'].includes(action)) throw new Error('Invalid task action');
   if (!Number.isInteger(expected_revision) || expected_revision < 1) throw new Error('Invalid expected_revision');
   if (!['assign','handoff'].includes(action) && assignee_id !== undefined) throw new Error('Assignee only allowed for assign or handoff');
   if (handoff_id!==undefined) {
@@ -89,7 +92,7 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
       if (old.fingerprint!==fingerprint) throw new Error('request_id already used for different content');
       return current;
     }
-    if (current?.negotiationId) policy=await this.readPolicy();
+    if (current?.negotiationId || current?.goalId) policy=await this.readPolicy();
   }
   return this.change(state => {
     const actor = this.actor(state, agent_id), tasks = records(state), task = tasks.find(t => t.id === task_id);
@@ -100,8 +103,10 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
       return task;
     }
     if (task.revision !== expected_revision) throw new Error('Task revision changed; read task before updating');
-    assertCollaborationTaskAction(state,task,actor,policy,this.now(),action);
-    assertTaskReviewAction(state,task,action);
+    if(action!=='evidence') assertCollaborationTaskAction(state,task,actor,policy,this.now(),action);
+    if(action!=='evidence') assertTaskReviewAction(state,task,action);
+    assertGoalTask(state,task,actor,this.now(),action);
+    if(assignee_id && task.goalId) assertGoalTask(state,{...task,assigneeId:assignee_id},actor,this.now(),action);
     if (['completed','cancelled'].includes(task.status)) throw new Error('Task is terminal');
     if (task.history.length >= 100) throw new Error('Task history full; archive deliberately before continuing');
     const owner = task.assigneeId === agent_id, creator = task.createdBy === agent_id;
@@ -113,9 +118,9 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
       task.status = 'cancelled';
     } else {
       if (!owner && !(action === 'accept' && task.assigneeId === null)) throw new Error('Only assigned agent can perform this action');
-      const allowed = {accept:['ready'], progress:['in_progress','blocked'], block:['in_progress'], resume:['blocked'], handoff:['in_progress','blocked'], complete:['in_progress']};
+      const allowed = {evidence:['ready','in_progress','blocked'],accept:['ready'], progress:['in_progress','blocked'], block:['in_progress'], resume:['blocked'], handoff:['in_progress','blocked'], complete:['in_progress']};
       if (!allowed[action].includes(task.status)) throw new Error('Invalid task transition');
-      if (['accept','resume'].includes(action) || (task.negotiationId && ['progress','complete'].includes(action))) {
+      if (['accept','resume'].includes(action) || ((task.negotiationId || task.goalId) && ['progress','complete'].includes(action))) {
         const decision=eligibility(state,actor,task,policy,this.now());
         if (!decision.allowed) throw new Error(decision.reasons.join('; '));
       }

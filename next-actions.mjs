@@ -2,6 +2,8 @@ import { eligibility, profileView, within } from './coordination.mjs';
 import { skillObservations } from './skill-improvement.mjs';
 import { skillDigest } from './skills.mjs';
 import { assertCollaborationTaskAction } from './collaboration.mjs';
+import { peerHelpView } from './peer-help.mjs';
+import { goalReasons } from './goals.mjs';
 
 const active = task => ['ready','in_progress','blocked'].includes(task.status);
 
@@ -12,8 +14,8 @@ export async function nextActions({agent_id,after=0,limit=20}) {
   let policy=null, policyError=false;
   try { policy=await this.readPolicy(); } catch { policyError=true; }
   const tasks=state.tasks??[], cycles=state.reviewCycles??[], entries=[];
-  const check=(task,extra=[])=>{
-    const result=eligibility(state,actor,task,policy,now);
+  const check=(task,extra=[],goalExecution=true)=>{
+    const result=eligibility(state,actor,task,policy,now,{goalExecution});
     const reasons=[...result.reasons,...extra];
     if (task.negotiationId) {
       const source=tasks.find(t=>t.id===task.id)??task;
@@ -26,6 +28,23 @@ export async function nextActions({agent_id,after=0,limit=20}) {
     return {...result,allowed:reasons.length===0,reasons};
   };
   const add=(priority,kind,id,reason,tool,args,fields={})=>entries.push({id:kind+':'+id,priority,kind,status:'actionable',reason,inspect:{tool,args:{agent_id,...args}},...fields});
+  for(const run of state.workerRuns??[]) {
+    if(run.agentId!==agent_id || run.status!=='running' || now<run.leaseUntil)continue;
+    add(5,'inspect_interrupted_run',run.id,'An earlier lease expired. Inspect actual effects, finalize its interrupted record, and reconcile outbox before continuing.','list_worker_runs',{}, {status:'blocked',runId:run.id});
+  }
+  for(const goal of state.goals??[]) {
+    if(!goal.participants.includes(agent_id)||['completed','cancelled'].includes(goal.status))continue;
+    const stopped=goal.status!=='active'||now>=Date.parse(goal.deadline);
+    add(65,'advance_goal',goal.id,stopped?'Inspect the paused or expired goal; do not create replacement work to reset limits.':'Inspect acceptance criteria, linked tasks, and remaining limits before proposing the next task.','get_goal',{goal_id:goal.id}, {status:stopped||!policy?'blocked':'actionable',goalRevision:goal.revision});
+  }
+  for(const record of state.peerHelp??[]) {
+    if(![record.requesterId,record.recipientId].includes(agent_id)||['resolved','escalated'].includes(record.phase))continue;
+    const help=peerHelpView(record,now),requester=record.requesterId===agent_id;
+    const stopped=help.effectivePhase==='expired';
+    const turn=requester?record.phase==='responded':record.phase==='awaiting_response';
+    const task=tasks.find(t=>t.id===record.taskId),stale=!task||task.revision!==record.taskRevision;
+    add(30,'inspect_peer_help',record.id,stale?'Task changed; requester must escalate stale advice.':stopped?'Peer-help deadline expired; requester must escalate.':help.effectivePhase==='exhausted'&&requester?'Final response available; resolve with evidence or escalate. No retries remain.':turn?'Inspect the addressed help request or response within your own scope.':'Waiting for the peer; do not create another request.','get_peer_help',{help_id:record.id},{status:stale||stopped?'blocked':turn?'actionable':'waiting',taskId:record.taskId,helpRevision:record.revision});
+  }
   const work=(priority,kind,task,reason,decision,fields={})=>add(priority,kind,task.id,reason,'get_task',{task_id:task.id},
     {taskId:task.id,taskRevision:task.revision,status:decision.allowed?'actionable':'blocked',eligibility:decision,...fields});
 
@@ -71,7 +90,7 @@ export async function nextActions({agent_id,after=0,limit=20}) {
     }
     const stale=cycle.submittedTaskRevision!==task.revision;
     if (cycle.reviewerId===agent_id && cycle.phase==='awaiting_review') {
-      const decision=check({...task,assigneeId:agent_id,kind:'review',requiredCapabilities:['review']},stale?['Builder must resubmit the current task revision']:[]);
+      const decision=check({...task,assigneeId:agent_id,kind:'review',requiredCapabilities:['review']},stale?['Builder must resubmit the current task revision']:[],false);
       emit('review_submission','Inspect the submitted artifacts and record an evidence-backed verdict',decision.allowed?'actionable':'blocked',decision);
     }
     if (cycle.builderId!==agent_id) continue;
@@ -107,11 +126,11 @@ export async function nextActions({agent_id,after=0,limit=20}) {
       if (cycle && ['awaiting_review','changes_requested'].includes(cycle.phase)) reasons.push('Cancel the active review before changing ownership');
       const candidate=Object.values(state.agents).some(a=>{
         const profile=profileView(a,now);
-        return a.id!==agent_id && !route.attempted.includes(a.id) && profile.availability==='available' &&
+        return goalReasons(state,{...task,assigneeId:a.id},a,now,{execution:false}).length===0 && a.id!==agent_id && !route.attempted.includes(a.id) && profile.availability==='available' &&
           (task.requiredCapabilities??[]).every(c=>profile.capabilities.includes(c)) && task.paths?.every(p=>profile.paths.some(root=>within(p,root)));
       });
       if (!candidate) reasons.push('No available matching worker');
-      const decision=check({...task,assigneeId:agent_id,requiredCapabilities:[]},reasons);
+      const decision=check({...task,assigneeId:agent_id,requiredCapabilities:[]},reasons,false);
       work(50,'retry_route',task,now<route.acceptBy?'Wait for the current acceptance deadline':'Delivery is overdue; inspect the fixed retry budget',decision,
         {status:now<route.acceptBy?'waiting':decision.allowed?'actionable':'blocked',retryAt:route.acceptBy,
           limits:{attempts:route.attempted.length,maxAttempts:route.maxAttempts,timeoutMinutes:route.timeoutMinutes}});

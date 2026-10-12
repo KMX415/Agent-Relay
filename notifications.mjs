@@ -13,6 +13,18 @@ export function notificationEvents(state, agentId, now) {
     const sourceKey = `${kind}:${source}`;
     events.push({ id: digest({ agentId, sourceKey, episode }), kind, sourceKey, ...fields });
   };
+  for(const goal of state.goals??[]) {
+    if(!goal.participants.includes(agentId))continue;
+    const expired=goal.status==='active'&&now>=Date.parse(goal.deadline);
+    const accounted=(goal.reservations??[]).reduce((n,r)=>n+(r.status==='reserved'?r.units:r.actualUnits),0);
+    const exhausted=goal.status==='active'&&goal.maxUsageUnits!==null&&accounted>=goal.maxUsageUnits;
+    if(expired||exhausted||['completed','paused','cancelled'].includes(goal.status))add('goal_'+(expired?'expired':exhausted?'usage_limit':goal.status),goal.id,goal.revision,{priority:goal.status==='completed'?'result':'decision',goalId:goal.id,title:goal.title,summary:'Inspect goal acceptance evidence and fixed limits before further work.',observedAt:goal.updatedAt});
+  }
+  for(const help of state.peerHelp??[]) {
+    if(help.requesterId!==agentId)continue;
+    const expired=!['resolved','escalated'].includes(help.phase)&&now>=Date.parse(help.deadline);
+    if(expired||['responded','escalated'].includes(help.phase))add('peer_help_'+(expired?'expired':help.phase),help.id,help.revision,{priority:expired||help.phase==='escalated'?'decision':'result',helpId:help.id,taskId:help.taskId,title:'Peer assistance',summary:'Inspect peer evidence; advice does not authorize resuming or expanding scope.',observedAt:help.updatedAt});
+  }
   for (const n of state.negotiations??[]) {
     if (![n.requesterId,n.recipientId].includes(agentId)) continue;
     const expired=['proposed','deferred'].includes(n.status) && now>=Date.parse(n.deadline);

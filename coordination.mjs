@@ -1,3 +1,4 @@
+import { goalReasons } from './goals.mjs';
 import { readFile } from 'node:fs/promises';
 
 export const taskKinds = ['implementation', 'review', 'research', 'documentation', 'testing'];
@@ -71,8 +72,8 @@ export function policyReader(repo, login, path=new URL('./runtime/autonomy.json'
     return validatePolicy(JSON.parse(content),repo,login);
   };
 }
-export function eligibility(state, actor, task, policy, now) {
-  const reasons=[];
+export function eligibility(state, actor, task, policy, now, {goalExecution=true}={}) {
+  const reasons=goalReasons(state,task,actor,now,{execution:goalExecution});
   if (!['ready','in_progress','blocked'].includes(task.status)) reasons.push('Task is terminal');
   if (task.assigneeId && task.assigneeId!==actor.id) reasons.push('Task belongs to another worker');
   if (task.dependsOn.some(id=>(state.tasks??[]).find(t=>t.id===id)?.status!=='completed')) reasons.push('Dependencies are not completed');

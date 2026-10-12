@@ -1,3 +1,4 @@
+import { assertGoalTask, goalReasons } from './goals.mjs';
 import { eligibility, profileView, within } from './coordination.mjs';
 import { assertTaskReviewAction } from './review-cycles.mjs';
 
@@ -26,7 +27,7 @@ export async function routeTask({agent_id,task_id,expected_revision,request_id,s
       if(previous.attempted.length>=max_attempts)return {routed:false,reason:'Routing attempt limit reached; human decision needed',task};
     } else if(!((task.status==='ready'&&task.createdBy===agent_id)||(['in_progress','blocked'].includes(task.status)&&task.assigneeId===agent_id)))throw new Error('Only creator of ready work or assigned active worker can route');
     if(!task.paths?.length)throw new Error('Routing requires declared task paths');
-    const decision=eligibility(state,actor,{...task,assigneeId:agent_id,requiredCapabilities:[]},policy,now);
+    const decision=eligibility(state,actor,{...task,assigneeId:agent_id,requiredCapabilities:[]},policy,now,{goalExecution:false});
     if(!decision.allowed)throw new Error(decision.reasons.join('; '));
     if(policy&&(task.handoffCount??0)+1>policy.max_handoffs)throw new Error('Handoff count exceeds policy');
     if(task.history.length>=100)throw new Error('Task history full');
@@ -36,11 +37,12 @@ export async function routeTask({agent_id,task_id,expected_revision,request_id,s
     const load=id=>(state.tasks??[]).filter(t=>t.id!==task.id&&t.assigneeId===id&&['ready','in_progress','blocked'].includes(t.status)).length;
     const candidates=Object.values(state.agents).filter(a=>{
       const p=profileView(a,now);
-      return a.id!==agent_id&&!attempted.includes(a.id)&&p.availability==='available'&&
+      return goalReasons(state,{...task,assigneeId:a.id},a,now,{execution:false}).length===0 && a.id!==agent_id&&!attempted.includes(a.id)&&p.availability==='available'&&
         (task.requiredCapabilities??[]).every(c=>p.capabilities.includes(c))&&task.paths.every(path=>p.paths.some(root=>within(path,root)));
     }).sort((a,b)=>load(a.id)-load(b.id)||a.id.localeCompare(b.id));
     if(!candidates.length)return {routed:false,reason:'No available matching worker; retry on a later wake',task};
     const selected=candidates[0];
+    assertGoalTask(state,{...task,assigneeId:selected.id},actor,now,'route');
     task.routing={requestedBy:agent_id,assigneeId:selected.id,attempted:[...attempted,selected.id],maxAttempts:max_attempts,timeoutMinutes:timeout_minutes,acceptBy:now+timeout_minutes*60000};
     task.assigneeId=selected.id;task.status='ready';task.handoffCount=(task.handoffCount??0)+1;task.revision++;task.updatedAt=now;actor.seenAt=now;
     task.history.push({revision:task.revision,actorId:agent_id,requestId:request_id,fingerprint,action:'route',summary,artifacts:[],nextSteps:next_steps,assigneeId:selected.id,status:'ready',createdAt:now});

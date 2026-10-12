@@ -1,3 +1,4 @@
+import { goalReasons } from './goals.mjs';
 import { randomUUID } from 'node:crypto';
 import { boundedText, eligibility } from './coordination.mjs';
 import { assertCollaborationTaskAction } from './collaboration.mjs';
@@ -21,7 +22,7 @@ const source = (state, cycle) => {
 const authorize = (state, actor, task, policy, now, review = false) => {
   assertCollaborationTaskAction(state,task,review?(state.agents[task.assigneeId]??actor):actor,policy,now);
   const target=review?{...task,assigneeId:actor.id,kind:'review',requiredCapabilities:['review']}:task;
-  const result=eligibility(state,actor,target,policy,now);
+  const result=eligibility(state,actor,target,policy,now,{goalExecution:!review});
   if (!result.allowed) throw new Error(result.reasons.join('; '));
 };
 
@@ -53,6 +54,8 @@ export async function startReviewCycle({agent_id,task_id,reviewer_id,max_rounds=
     const task=source(state,{taskId:task_id,builderId:agent_id});
     if(task.revision!==expected_task_revision) throw new Error('Task revision changed; reread task');
     authorize(state,actor,task,policy,this.now());
+    const reviewerReasons=goalReasons(state,{...task,assigneeId:reviewer_id,kind:'review'},state.agents[reviewer_id],this.now(),{execution:false});
+    if(reviewerReasons.length) throw new Error(reviewerReasons.join('; '));
     const now=this.now(), cycle={id,taskId:task_id,builderId:agent_id,reviewerId:reviewer_id,maxRounds:max_rounds,round:1,
       phase:'awaiting_review',revision:1,submittedTaskRevision:task.revision,requestId:request_id,fingerprint,
       createdAt:now,updatedAt:now,history:[{revision:1,round:1,actorId:agent_id,action:'submit',summary,artifacts,taskRevision:task.revision,createdAt:now}]};

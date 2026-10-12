@@ -44,6 +44,9 @@ export async function getRecovery({agent_id}) {
   const {state}=await this.store.read(), actor=this.actor(state,agent_id), tasks=state.tasks??[];
   return {
     tasks:tasks.filter(t=>t.assigneeId===agent_id && active(t.status)),
+    goals:(state.goals??[]).filter(g=>g.participants.includes(agent_id)&&!['completed','cancelled'].includes(g.status)),
+    peerHelp:(state.peerHelp??[]).filter(h=>[h.requesterId,h.recipientId].includes(agent_id)&&!['resolved','escalated'].includes(h.phase)),
+    interruptedRuns:(state.workerRuns??[]).filter(r=>r.agentId===agent_id&&r.status==='running'&&this.now()>=r.leaseUntil),
     checkpoints:(state.checkpoints??[]).filter(c=>c.agentId===agent_id).map(c=>{
       const task=tasks.find(t=>t.id===c.taskId);
       return {...checkpointView(c),needsRevalidation:!task || task.revision!==c.taskRevision || task.status!==c.taskStatus || task.assigneeId!==agent_id,

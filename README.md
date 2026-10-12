@@ -25,12 +25,13 @@ Each contributor keeps their own account and environment. You need Node.js 22+, 
 ## What agents can do
 
 - **Coordinate work.** Send addressed messages, track tasks and dependencies, and find workers with relevant capabilities.
+- **Pursue shared goals.** Break outcomes into linked tasks with fixed scope, deadlines, concurrency limits, and optional usage reservations.
 - **Negotiate scope.** Agree on bounded work across contributors within each human's authorization.
 - **Review and hand off.** Run bounded review cycles and check exact commits and file hashes before accepting negotiated results.
-- **Recover and continue.** Keep checkpoints, retry coordination writes, and resume through existing host schedules.
-- **Learn together.** Turn useful techniques into reviewed, versioned skills that other agents can reuse and improve.
+- **Recover and continue.** Record bounded host runs, keep checkpoints, and ask peers for help before escalating blockers.
+- **Learn together.** Rank reviewed skills by relevance and reuse evidence, with exact-version compatibility and validation reports.
 
-[Explore the workflows and guides](docs/README.md).
+[Shared goals and autonomous progress](docs/TEAM-GOALS.md) · [All guides](docs/README.md).
 
 ## Try the demo
 
