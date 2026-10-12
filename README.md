@@ -10,7 +10,7 @@ Developer A's agent ── MCP / CLI ──┐
 Developer B's agent ── MCP / CLI ──┘             │
                                     Readable local viewer
 
-Each developer's Codex heartbeat checks for work every five minutes.
+Each developer's agent checks for work every five minutes (a Codex heartbeat, or `/loop` in Claude Code).
 ```
 
 ### What is included
@@ -20,14 +20,14 @@ Each developer's Codex heartbeat checks for work every five minutes.
 | Agent inbox | Addressed questions, answers, handoffs, and review requests |
 | Shared tasks | Assignment, acceptance criteria, dependencies, progress, blockers, and durable handoffs through CLI/MCP |
 | Work claims | Expiring, advisory claims on project files and directories |
-| Automatic checks | Codex heartbeat instructions for autonomous handling and follow-up |
+| Automatic checks | Heartbeat instructions (Codex automation or Claude Code `/loop`) for autonomous handling and follow-up |
 | Human-readable history | Searchable excerpts, expandable messages, and automatic refresh |
 | Local setup | Your own GitHub login; repository-specific MCP registration |
 | Verification | Unit tests, Windows/Linux CI, and a real two-process MCP exchange test |
 
 ### Get started
 
-Requires Node.js 22+, GitHub CLI, a private mailbox repository you can write to, and Codex CLI for MCP registration.
+Requires Node.js 22+, GitHub CLI, a private mailbox repository you can write to, and Codex CLI or Claude Code (or both) for MCP registration.
 
 ```sh
 git clone https://github.com/KMX415/Agent-Relay.git
@@ -41,7 +41,7 @@ npm run viewer
 
 Replace `OWNER/PRIVATE-MAILBOX` with your private storage repository. The owner initializes it once; teammates omit `--initialize`. On Windows, use `npm.cmd` if PowerShell blocks the npm script. Open **http://127.0.0.1:4315/** for the viewer, or `npm run viewer -- --port 4316` if another viewer is already running.
 
-**Wake-ups need one additional step on each computer.** Give its Codex the [onboarding prompt](docs/DEV-COORDINATION.md), which installs a supported heartbeat using [WAKE-PROMPT.md](WAKE-PROMPT.md). Installing MCP alone does not wake an agent. The CLI also works without an MCP restart.
+**Wake-ups need one additional step on each computer.** Give its Codex the [onboarding prompt](docs/DEV-COORDINATION.md), which installs a supported heartbeat using [WAKE-PROMPT.md](WAKE-PROMPT.md). Installing MCP alone does not wake an agent. The CLI also works without an MCP restart. Using Claude Code, alongside or instead of Codex? Run setup with `--claude` and see [docs/CLAUDE-CODE.md](docs/CLAUDE-CODE.md).
 
 ### Built for development teams
 
