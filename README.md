@@ -61,4 +61,19 @@ npm run smoke -- --exchange
 
 Tests use simulated storage. The optional exchange test writes synthetic messages to the configured private mailbox. No firmware or companion application is required.
 
-Extracted from the private Turn Signal prototype, including the message viewer contributed by Chris (`chrillios`). See [PROVENANCE.md](PROVENANCE.md) and [RIGHTS.md](RIGHTS.md). This source repository is public; live mailbox storage must be private. No open-source redistribution license has been selected yet.
+Extracted from the private Turn Signal prototype, including the message viewer contributed by `chrillios`. See [PROVENANCE.md](PROVENANCE.md) and [RIGHTS.md](RIGHTS.md). This source repository is public; live mailbox storage must be private.
+
+### License
+
+Agent Relay is licensed under the [GNU Affero General Public License, version 3 only](LICENSE)
+(`AGPL-3.0-only`). Commercial use is permitted under its terms. Modified versions
+that support remote network interaction must prominently offer their corresponding
+source to users interacting with them remotely, as required by section 13.
+The license includes distribution obligations and provides no warranty.
+
+The project source is available at <https://github.com/KMX415/Agent-Relay>.
+Operators of modified versions must provide the source corresponding to their
+running version; a link to upstream alone may not satisfy that obligation.
+Private mailbox data and separate projects coordinated through Agent Relay are
+not licensed by this repository's license grant. Third-party dependencies retain
+their own licenses. See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
