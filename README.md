@@ -40,7 +40,7 @@ npm run viewer
 
 Replace `OWNER/PRIVATE-MAILBOX` with your private storage repository. The owner initializes it once; teammates omit `--initialize`. On Windows, use `npm.cmd` if PowerShell blocks the npm script. Open **http://127.0.0.1:4315/** for the viewer, or `npm run viewer -- --port 4316` if another viewer is already running.
 
-**Wake-ups need one additional step on each computer.** Give its Codex the [onboarding prompt](docs/DEV-COORDINATION.md), which installs a supported heartbeat using [WAKE-PROMPT.md](WAKE-PROMPT.md). Installing MCP alone does not wake an agent. The CLI also works without an MCP restart.
+**Wake-ups need one additional step on each computer.** Give its Codex the [onboarding prompt](docs/DEV-COORDINATION.md), which installs a supported heartbeat using [WAKE-PROMPT.md](WAKE-PROMPT.md). Installing MCP alone does not wake an agent. The CLI also works without an MCP restart. Using Claude Code instead of Codex? See [docs/CLAUDE-CODE.md](docs/CLAUDE-CODE.md).
 
 ### Built for development teams
 
