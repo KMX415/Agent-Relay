@@ -1,10 +1,10 @@
 # Using Agent Relay with Claude Code
 
-Agent Relay's storage, CLI and viewer are agent-neutral. Only two things in the
-default setup are Codex-specific: MCP registration (`codex mcp add`) and the
-wake-up heartbeat (a Codex automation). This page covers the Claude Code
-equivalents. Everything else in [DEV-COORDINATION.md](DEV-COORDINATION.md)
-applies unchanged.
+Agent Relay's storage, CLI and viewer are agent-neutral, and Claude Code is
+supported alongside Codex (not instead of it): `setup.mjs --claude` registers
+the MCP server with Claude Code as well, and wake-ups use Claude Code's `/loop`
+where Codex uses a heartbeat automation. Everything else in
+[DEV-COORDINATION.md](DEV-COORDINATION.md) applies unchanged.
 
 ## 1. Setup
 
@@ -13,13 +13,23 @@ git clone https://github.com/KMX415/Agent-Relay.git RELAY_ROOT
 cd RELAY_ROOT
 npm ci
 gh auth login
-node setup.mjs --repo OWNER/PRIVATE-MAILBOX --no-mcp          # teammates
-node setup.mjs --repo OWNER/PRIVATE-MAILBOX --no-mcp --initialize   # owner, once
+node setup.mjs --repo OWNER/PRIVATE-MAILBOX --claude                # Codex and Claude Code
+node setup.mjs --repo OWNER/PRIVATE-MAILBOX --claude --no-codex     # Claude Code only
+node setup.mjs --repo OWNER/PRIVATE-MAILBOX --no-mcp                # CLI and viewer only
+# the owner adds --initialize once
 ```
 
-`--no-mcp` skips Codex registration and still saves `runtime/config.json` and
-the stable worker identity in `runtime/mailbox-worker.json`. Use one Agent
-Relay clone per agent (see below).
+| Flag | Effect |
+|---|---|
+| (none) | Registers the MCP server with Codex, as before |
+| `--claude` | Also registers it with Claude Code (`claude mcp add --scope user`) |
+| `--no-codex` | Skips Codex registration (use with `--claude` on a Claude-only computer) |
+| `--no-mcp` | Registers with neither; the CLI and viewer still work |
+
+Every form saves `runtime/config.json` and the stable worker identity in
+`runtime/mailbox-worker.json`. An existing registration that differs is never
+overwritten; setup stops and names it. Use one Agent Relay clone per agent
+(see below).
 
 ## 2. Talk to the mailbox: use the CLI
 
@@ -38,15 +48,10 @@ never paste message text into a shell command. For example, `runtime/ack.json`
 is just `{"message_id":"ID-FROM-CHECK-INBOX"}`; the CLI adds your saved
 worker ID itself.
 
-**Optional: register the MCP server with Claude Code.** The server is a plain
-stdio MCP server, so the usual Claude Code form should work:
-
-```sh
-claude mcp add agent-relay --env AGENT_MAILBOX_REPO=OWNER/PRIVATE-MAILBOX -- node /absolute/path/to/RELAY_ROOT/server.mjs
-```
-
-Restart the Claude Code session afterwards. The CLI route above is the one
-this page recommends, because it needs nothing else.
+**MCP tools in Claude Code.** After `setup.mjs --claude`, restart the Claude
+Code session; the mailbox tools (`join_team`, `check_inbox`, `send_message`, ...)
+then appear alongside the CLI. Check it with `claude mcp get NAME` (the name
+setup prints). The CLI works either way and needs no restart.
 
 ## 3. Wake-ups: `/loop` instead of a Codex heartbeat
 
@@ -90,7 +95,7 @@ after replacing the three placeholders:
 > Set up Agent Relay from RELAY_ROOT for development in PROJECT_ROOT, using
 > private mailbox OWNER/PRIVATE-MAILBOX and my own GitHub account. Follow
 > Agent Relay's docs/DEV-COORDINATION.md and docs/CLAUDE-CODE.md. Install
-> dependencies and run `node setup.mjs --no-mcp`, initialize storage only if I
+> dependencies and run `node setup.mjs --claude` (add `--no-codex` if this computer has no Codex), initialize storage only if I
 > am its designated owner, and verify `node cli.mjs team_status` works. Then
 > start a `/loop` on this session using the complete WAKE-PROMPT.md
 > instructions, with RELAY_ROOT and PROJECT_ROOT replaced by absolute paths.

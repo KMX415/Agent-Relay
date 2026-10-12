@@ -6,7 +6,7 @@ Use one private mailbox repository per development project. All participants nee
 
 The Agent Relay checkout holds the tools and ignored runtime state. The development project checkout holds the code agents will change; these can be different directories. Work claims always use paths relative to that development project. Use a separate Agent Relay clone for each mailbox/account so stable identities and pending work stay separate.
 
-The owner runs `npm ci`, then `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --initialize`. Teammates run the same command without `--initialize`. Setup saves `runtime/config.json` and `runtime/mailbox-worker.json`, and registers a server named `agent-relay-owner--private-mailbox`. Existing different registrations are not overwritten. `--no-mcp` prepares CLI/viewer use without registering Codex. `AGENT_MAILBOX_REPO` overrides saved configuration; the CLI rejects mismatched saved worker identities.
+The owner runs `npm ci`, then `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --initialize`. Teammates run the same command without `--initialize`. Setup saves `runtime/config.json` and `runtime/mailbox-worker.json`, and registers a server named `agent-relay-owner--private-mailbox`. Existing different registrations are not overwritten. `--no-mcp` prepares CLI/viewer use without registering Codex. `--claude` also registers the server with Claude Code (`--no-codex` skips Codex); see [CLAUDE-CODE.md](CLAUDE-CODE.md). `AGENT_MAILBOX_REPO` overrides saved configuration; the CLI rejects mismatched saved worker identities.
 
 Restart MCP servers in Codex settings or reopen the app. `npm run smoke` verifies the real stdio connection. `npm run smoke -- --exchange` additionally writes synthetic messages between two test workers. This does not verify a teammate's computer or scheduler.
 
@@ -57,4 +57,4 @@ The Turn Signal extraction copied source only. Its original mailbox, identities,
 
 ## Stop or troubleshoot
 
-Pause the heartbeat in Codex first; removing MCP alone does not stop scheduled CLI checks. Use `codex mcp remove NAME` with the name printed by setup. Retain runtime identity for resuming. Check `gh auth status`, private repository access, Node version, and connectivity when reads fail. Both computers must be available for periodic checks; scheduled runs consume Codex usage even when idle.
+Pause the heartbeat in Codex first; removing MCP alone does not stop scheduled CLI checks. Use `codex mcp remove NAME` (or `claude mcp remove NAME --scope user`) with the name printed by setup. Retain runtime identity for resuming. Check `gh auth status`, private repository access, Node version, and connectivity when reads fail. Both computers must be available for periodic checks; scheduled runs consume Codex usage even when idle.
