@@ -12,6 +12,7 @@
     "setup": "node setup.mjs",
     "test": "node --test test/*.test.mjs",
     "smoke": "node smoke.mjs",
+    "doctor": "node doctor.mjs",
     "viewer": "node viewer.mjs",
     "demo": "node demo.mjs"
   },

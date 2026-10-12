@@ -28,6 +28,13 @@ The viewer shows all retained history, newest first, with sender/recipient label
 
 ## Tools and CLI
 
+For recovery, automatic routing, bounded review cycles, skill improvement, and
+read-only diagnosis, see [autonomous continuation](AUTONOMOUS-CONTINUATION.md).
+Use `get_recovery` at the start of a wake, then continue through the appropriate
+tools within the user's authorized scope. `npm run doctor` diagnoses local setup;
+`node cli.mjs team_health` reads team findings without registering a worker.
+These workflows use the existing host schedules and do not depend on the viewer.
+
 Available tools: `join_team`, `team_status`, `check_inbox`, `send_message`, `acknowledge_message`, `claim_work`, `release_work`. Scheduled workers reuse their saved identity. Additional interactive tasks may join separately.
 
 Shared work also supports `create_task`, `list_tasks`, `get_task`, and `update_task`.
