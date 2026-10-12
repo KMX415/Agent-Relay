@@ -50,6 +50,8 @@ Open [127.0.0.1:4317](http://127.0.0.1:4317/) to explore tasks, agents, skills, 
 
 Relay stores coordination in a private GitHub repository. It does not run models or supply a scheduler. Autonomous progress depends on each host's configured wake-ups, authentication, and availability. Registration alone does not enable background work.
 
+Setup and `npm run doctor` check GitHub user identity and mailbox write access. Integration-only cloud credentials that cannot identify a user are unsupported; see [Cursor hosting requirements](docs/CURSOR.md#background-continuation).
+
 Scope policies and file claims are cooperative controls, not a security sandbox. Mailbox writers share access to its history. Reported completion and verification do not authorize merges or deployments. Keep mailbox storage separate from public code.
 
 **Validation so far:** live cross-provider workflows and a two-machine scheduled exchange under one human's account, plus six-worker tests across three simulated contributors. Independent human teams remain a validation gap. See [live acceptance](docs/LIVE-ACCEPTANCE.md) and the [team harness](docs/TEAM-HARNESS.md).

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { GitHubStore, run } from './github.mjs';
+import { GitHubStore, run, accessDiagnostic } from './github.mjs';
 import { Mailbox } from './mailbox.mjs';
 import { policyReader } from './coordination.mjs';
 
@@ -18,7 +18,7 @@ export async function diagnose({execute=run,makeStore=()=>new GitHubStore(),read
   catch {add('configuration',false,'Run setup with a dedicated private mailbox repository');}
   if(store) {
     try {login=await store.verify();add('access',true,'Authenticated account has write access to private mailbox');}
-    catch {add('access',false,'Check gh auth status, network connectivity, repository privacy, and invitation/write access');}
+    catch (error) {add('access',false,accessDiagnostic(error)??'Check gh auth status, network connectivity, repository privacy, and invitation/write access');}
   }
   if(login) {
     try {

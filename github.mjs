@@ -5,6 +5,19 @@ export const STORAGE_BRANCH = 'dev-agent-mailbox';
 export const STORAGE_FILE = 'mailbox.json';
 export const emptyState = () => ({ version: 1, agents: {}, messages: [], claims: [] });
 
+const accessDetails = Object.freeze({
+  RELAY_PRIVATE_REQUIRED: 'Development mailbox requires a PRIVATE repository',
+  RELAY_USER_REQUIRED: 'Relay requires an authenticated GitHub user identity. This credential cannot access the user endpoint; integration-only cloud credentials are not supported. Use an authorized user session on this host.',
+  RELAY_IDENTITY_INVALID: 'GitHub did not return a valid user login. Relay cannot establish worker ownership; check the authenticated user session on this host.',
+  RELAY_WRITE_REQUIRED: 'GitHub account needs write access to this private repository. Repository metadata did not confirm write access; check the invitation and credential permissions on this host.',
+});
+export function accessDiagnostic(error) {
+  return Object.hasOwn(accessDetails, error?.code) ? accessDetails[error.code] : null;
+}
+function accessError(code) {
+  return Object.assign(new Error(accessDetails[code]), {code});
+}
+
 export function run(command, args, input) {
   return new Promise((resolve, reject) => {
     // No shell interpolation, no token copied out of the user's gh credential store.
@@ -40,9 +53,18 @@ export class GitHubStore {
   }
   async verify() {
     const repo = await this.api(`repos/${this.repo}`);
-    if (!repo.private) throw new Error('Development mailbox requires a PRIVATE repository');
-    if (!repo.permissions?.push) throw new Error('GitHub account needs write access to this private repository');
-    return (await this.api('user')).login;
+    if (!repo.private) throw accessError('RELAY_PRIVATE_REQUIRED');
+    let user;
+    try { user = await this.api('user'); }
+    catch (error) {
+      if (error.status === 403 && /Resource not accessible by integration/i.test(error.message)) {
+        throw accessError('RELAY_USER_REQUIRED');
+      }
+      throw error;
+    }
+    if (typeof user?.login !== 'string' || !/^[a-z\d](?:[a-z\d-]*[a-z\d])?$/i.test(user.login)) throw accessError('RELAY_IDENTITY_INVALID');
+    if (repo.permissions?.push !== true) throw accessError('RELAY_WRITE_REQUIRED');
+    return user.login;
   }
   async read() {
     // Check visibility on every read, including writes' read-before-CAS. Never silently
