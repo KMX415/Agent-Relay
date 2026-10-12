@@ -2,7 +2,7 @@ import { mkdir,readFile,readdir,writeFile,link,unlink,stat } from 'node:fs/promi
 import { join } from 'node:path';
 import { createHash,randomUUID } from 'node:crypto';
 
-const allowed=new Set(['create_integration_check','advance_integration_check','propose_contract','advance_contract','create_goal','update_goal','reserve_goal_usage','settle_goal_usage','request_peer_help','advance_peer_help','record_skill_validation','begin_worker_run','finish_worker_run','archive_worker_run','send_message','create_task','update_task','create_skill','review_skill','update_skill','record_skill_use','route_task','save_checkpoint','start_review_cycle','advance_review_cycle','propose_skill_improvement','resolve_skill_improvement','set_collaboration_agreement','revoke_collaboration_agreement','propose_negotiation','advance_negotiation','create_handoff','record_handoff_verification']);
+const allowed=new Set(['request_decision','resolve_decision','create_integration_check','advance_integration_check','propose_contract','advance_contract','create_goal','update_goal','reserve_goal_usage','settle_goal_usage','request_peer_help','advance_peer_help','record_skill_validation','begin_worker_run','finish_worker_run','archive_worker_run','send_message','create_task','update_task','create_skill','review_skill','update_skill','record_skill_use','route_task','save_checkpoint','start_review_cycle','advance_review_cycle','propose_skill_improvement','resolve_skill_improvement','set_collaboration_agreement','revoke_collaboration_agreement','propose_negotiation','advance_negotiation','create_handoff','record_handoff_verification']);
 const hash=text=>createHash('sha256').update(text).digest('hex');
 const canonical=value=> {
   if (value===null || typeof value!=='object') return value;
@@ -11,7 +11,7 @@ const canonical=value=> {
 };
 const encoded=value=>JSON.stringify(canonical(value));
 export const supportsDurable=(tool,args)=>allowed.has(tool) && typeof args?.request_id==='string' && !!args.request_id.trim() && args.request_id.length<=120 && typeof args?.agent_id==='string' && !!args.agent_id.trim();
-const nameFor=(tool,args)=>hash(encoded({tool,agentId:args.agent_id,requestId:args.request_id,target:args.task_id??args.skill_id??args.cycle_id??args.improvement_id??args.agreement_id??args.negotiation_id??args.handoff_id??args.goal_id??args.help_id??args.run_id??args.contract_id??args.integration_id??null}));
+const nameFor=(tool,args)=>hash(encoded({tool,agentId:args.agent_id,requestId:args.request_id,target:args.task_id??args.skill_id??args.cycle_id??args.improvement_id??args.agreement_id??args.negotiation_id??args.handoff_id??args.goal_id??args.help_id??args.run_id??args.contract_id??args.integration_id??args.decision_id??null}));
 const tooLarge=()=>new Error('Outbox record exceeds 100 KB');
 async function atomicCreate(path,content) {
   const temporary=path+'.'+randomUUID()+'.tmp';

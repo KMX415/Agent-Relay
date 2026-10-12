@@ -1,4 +1,5 @@
 import { integrationView } from './integration-checks.mjs';
+import { decisionView } from './decisions.mjs';
 import { contractView } from './contracts.mjs';
 import { createHash } from 'node:crypto';
 import { boundedText } from './coordination.mjs';
@@ -45,6 +46,7 @@ export async function saveCheckpoint({agent_id,task_id,expected_revision,expecte
 export async function getRecovery({agent_id}) {
   const {state}=await this.store.read(), actor=this.actor(state,agent_id), tasks=state.tasks??[];
   return {
+    decisions:(state.decisions??[]).filter(d=>d.createdBy===agent_id||d.requiredResponders.includes(agent_id)||tasks.some(t=>d.blockedTaskIds.includes(t.id)&&t.assigneeId===agent_id)).map(d=>decisionView(d,state,this.now())),
     integrationChecks:(state.integrationChecks??[]).filter(c=>c.participants.includes(agent_id)).map(c=>integrationView(c,this.now())),
     contracts:(state.contracts??[]).filter(c=>c.participants.includes(agent_id)).map(c=>contractView(c,this.now())),
     tasks:tasks.filter(t=>t.assigneeId===agent_id && active(t.status)),

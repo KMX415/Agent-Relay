@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { contractView } from './contracts.mjs';
 import { integrationView } from './integration-checks.mjs';
+import { decisionView } from './decisions.mjs';
 
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const active = task => ['ready', 'in_progress', 'blocked'].includes(task.status);
@@ -15,6 +16,17 @@ export function notificationEvents(state, agentId, now) {
     const sourceKey = `${kind}:${source}`;
     events.push({ id: digest({ agentId, sourceKey, episode }), kind, sourceKey, ...fields });
   };
+  for(const record of state.decisions??[]) {
+    const assigned=(state.tasks??[]).filter(t=>record.blockedTaskIds.includes(t.id)&&t.assigneeId===agentId&&active(t));
+    if(record.createdBy!==agentId&&!record.requiredResponders.includes(agentId)&&!assigned.length)continue;
+    const d=decisionView(record,state,now),conflict=new Set(d.responses.map(r=>r.optionId)).size>1;
+    const consumed=record.status==='resolved'&&record.blockedTaskIds.length>0&&record.blockedTaskIds.every(id=>(state.tasks??[]).some(t=>t.id===id&&t.decisionReceipts?.some(r=>r.decisionId===d.id&&r.version===d.version&&r.digest===d.digest&&r.actorId===t.assigneeId)));
+    if(consumed)continue;
+    const condition=d.status==='open'?(conflict?'conflict':d.category!=='implementation'&&!d.responses.some(r=>r.actorId===agentId)&&record.requiredResponders.includes(agentId)?'human_required':null):d.status;
+    if(!condition)continue;
+    // A version/state episode is stable across routine answer writes and polls.
+    add('decision_'+condition,d.id,{version:d.version,condition},{priority:condition==='resolved'?'result':'decision',decisionId:d.id,decisionRevision:d.revision,title:'Shared decision',summary:condition==='resolved'?'Inspect the exact resolved choice; affected tasks require explicit adoption and current authorization.':condition==='human_required'?'A responsible human answer is needed. Recorded answers remain unverified reports and do not change authorization.':condition==='conflict'?'Required answers disagree; inspect the bounded options without treating silence as consent.':'Inspect changed context or expired limits; do not reset the decision budget.',observedAt:d.updatedAt});
+  }
   for(const record of state.integrationChecks??[]) {
     if(!record.participants.includes(agentId))continue;
     const check=integrationView(record,now);

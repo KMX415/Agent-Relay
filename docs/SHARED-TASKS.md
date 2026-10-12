@@ -61,6 +61,7 @@ return the current task, which may include subsequent updates.
 | `block` | in_progress | Assignee records blocker, status becomes blocked |
 | `resume` | blocked | Assignee resumes, status becomes in_progress |
 | `pin_contract` | ready, blocked | Assignee explicitly pins the current agreed digest; an existing pin retains its contract ID |
+| `adopt_decision` | ready, blocked, in_progress | Assignee records an exact current resolved choice; status does not change |
 | `handoff` | in_progress, blocked | Assignee supplies another `assignee_id` and nonempty `next_steps`; status becomes ready |
 | `complete` | in_progress | Assignee records acceptance evidence, status becomes completed |
 | `cancel` | any nonterminal state | Creator cancels |
@@ -70,6 +71,18 @@ cancelled dependency does not satisfy a dependent task. Completed and cancelled
 tasks are terminal; create a replacement task when replanning is necessary.
 Concurrent acceptance has one winner. Other stale updates fail rather than
 overwriting newer work; reread and make a new decision with a new retry key.
+
+[Durable decisions](DECISIONS.md) can gate explicitly named tasks while a choice
+is pending. Only affected tasks owned by the requester are gated; unrelated work
+continues. A resolved choice needs explicit `adopt_decision` with `decision_id`,
+`decision_digest`, `expected_decision_revision`, and the ordinary update fields.
+Adoption records a receipt and increments the task revision without resuming it.
+Recheck policy, dependencies, and claims before acceptance or continuation.
+Changed linked context invalidates an unadopted answer; contiguous adoption-only
+updates with matching receipts, including other decisions, are accounted for.
+An adopted choice
+remains historical through subsequent progress, but a new question version gates
+the affected tasks again.
 
 Handoff example, sent through `update_task`:
 

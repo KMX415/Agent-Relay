@@ -1,3 +1,4 @@
+import { requestDecision, resolveDecision, getDecision, listDecisions } from './decisions.mjs';
 import { createIntegrationCheck, getIntegrationCheck, listIntegrationChecks, advanceIntegrationCheck } from './integration-checks.mjs';
 import { proposeContract, advanceContract, getContract, listContracts } from './contracts.mjs';
 import { rankSkills, getSkillValidations, recordSkillValidation } from './skill-selection.mjs';
@@ -29,6 +30,10 @@ const overlap = (a,b) => a === b || a.startsWith(b+'/') || b.startsWith(a+'/');
 const recipient = (m, a) => m.to === a.id || m.to.toLowerCase() === a.owner.toLowerCase() || m.to === 'team';
 
 export class Mailbox {
+  requestDecision = requestDecision;
+  resolveDecision = resolveDecision;
+  getDecision = getDecision;
+  listDecisions = listDecisions;
   createIntegrationCheck = createIntegrationCheck;
   getIntegrationCheck = getIntegrationCheck;
   listIntegrationChecks = listIntegrationChecks;

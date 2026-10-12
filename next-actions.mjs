@@ -6,6 +6,7 @@ import { peerHelpView } from './peer-help.mjs';
 import { goalReasons } from './goals.mjs';
 import { contractView, contractTaskReasons } from './contracts.mjs';
 import { integrationView } from './integration-checks.mjs';
+import { decisionView } from './decisions.mjs';
 
 const active = task => ['ready','in_progress','blocked'].includes(task.status);
 
@@ -30,6 +31,19 @@ export async function nextActions({agent_id,after=0,limit=20}) {
     return {...result,allowed:reasons.length===0,reasons};
   };
   const add=(priority,kind,id,reason,tool,args,fields={})=>entries.push({id:kind+':'+id,priority,kind,status:'actionable',reason,inspect:{tool,args:{agent_id,...args}},...fields});
+  for(const record of state.decisions??[]) {
+    const assigned=tasks.filter(t=>record.blockedTaskIds.includes(t.id)&&t.assigneeId===agent_id&&active(t));
+    if(record.createdBy!==agent_id&&!record.requiredResponders.includes(agent_id)&&!assigned.length)continue;
+    const d=decisionView(record,state,now),pending=assigned.filter(t=>!t.decisionReceipts?.some(r=>r.decisionId===d.id&&r.version===d.version&&r.digest===d.digest&&r.actorId===agent_id));
+    const consumed=record.status==='resolved'&&record.blockedTaskIds.length>0&&record.blockedTaskIds.every(id=>tasks.some(t=>t.id===id&&t.decisionReceipts?.some(r=>r.decisionId===d.id&&r.version===d.version&&r.digest===d.digest&&r.actorId===t.assigneeId)));
+    if(consumed)continue;
+    const responded=d.responses.some(r=>r.actorId===agent_id),staleResponse=d.status==='open'&&d.staleResponderIds?.includes(agent_id),conflict=new Set(d.responses.map(r=>r.optionId)).size>1;
+    const stopped=['superseded','expired'].includes(d.status)||d.exhausted;
+    if(d.status==='resolved'&&!pending.length)continue;
+    const reason=stopped?'Inspect stale context or exhausted limits; only the original requester may reassess within the same deadline and revision budget.':staleResponse?'Your earlier answer has stale authorization evidence. Recheck current policy and agreements, then refresh only your own response within the original deadline.':d.status==='resolved'?'Inspect the exact resolved choice and explicitly adopt it on affected tasks; adoption does not resume work or grant authority.':conflict?'Required responses conflict. Inspect evidence; replace only your own answer within existing authority.':d.category!=='implementation'?'Obtain the responsible human answer through an authorized host interaction; a reported answer does not independently verify consent.':'Inspect the bounded choice and existing policy and agreements before responding; silence is not consent.';
+    const status=stopped?'blocked':d.status==='resolved'?'actionable':record.requiredResponders.includes(agent_id)&&(!responded||conflict||staleResponse)?'actionable':'waiting';
+    add(22,'inspect_decision',d.id,reason,'get_decision',{decision_id:d.id},{status,decisionRevision:d.revision,decisionVersion:d.version,digest:d.digest,blockedTaskIds:pending.map(t=>t.id)});
+  }
   for(const record of state.integrationChecks??[]) {
     if(!record.participants.includes(agent_id))continue;
     const check=integrationView(record,now);

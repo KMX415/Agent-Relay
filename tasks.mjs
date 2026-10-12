@@ -1,7 +1,8 @@
+import { decisionTaskReasons, assertDecisionAdoption } from './decisions.mjs';
 import { assertGoalTask } from './goals.mjs';
 import { assertContractTask, contractPin } from './contracts.mjs';
 import { randomUUID } from 'node:crypto';
-import { taskKinds, relativePath, eligibility } from './coordination.mjs';
+import { taskKinds, relativePath, eligibility, within } from './coordination.mjs';
 import { assertTaskReviewAction } from './review-cycles.mjs';
 import { assertCollaborationTaskAction } from './collaboration.mjs';
 import { assertVerifiedHandoff } from './handoffs.mjs';
@@ -73,10 +74,13 @@ export async function getTask({agent_id, task_id}) {
   return task;
 }
 
-export async function updateTask({agent_id, task_id, expected_revision, request_id, action, summary, assignee_id, artifacts = [], next_steps = [], handoff_id, contract_id, contract_digest, contract_evidence}) {
+export async function updateTask({agent_id, task_id, expected_revision, request_id, action, summary, assignee_id, artifacts = [], next_steps = [], handoff_id, contract_id, contract_digest, contract_evidence, decision_id, decision_digest, expected_decision_revision}) {
   request_id = text(request_id, 'request_id', 120); summary = text(summary, 'summary');
   artifacts = list(artifacts, 'artifacts'); next_steps = list(next_steps, 'next_steps');
-  if (!['assign', 'accept', 'progress', 'block', 'resume', 'handoff', 'complete', 'cancel', 'evidence', 'pin_contract'].includes(action)) throw new Error('Invalid task action');
+  if (!['assign', 'accept', 'progress', 'block', 'resume', 'handoff', 'complete', 'cancel', 'evidence', 'pin_contract', 'adopt_decision'].includes(action)) throw new Error('Invalid task action');
+  const adoption=action==='adopt_decision'?{decision_id:text(decision_id,'decision_id',150),decision_digest:text(decision_digest,'decision_digest',64),expected_decision_revision}:null;
+  if(adoption&&(!Number.isInteger(expected_decision_revision)||expected_decision_revision<1))throw new Error('Invalid expected_decision_revision');
+  if(!adoption&&[decision_id,decision_digest,expected_decision_revision].some(v=>v!==undefined))throw new Error('Decision fields require adopt_decision');
   const pin=contractPin(contract_id,contract_digest);
   if(action==='pin_contract'&&!pin.contractId)throw new Error('Pin requires contract ID and digest');
   if(action!=='pin_contract'&&pin.contractId)throw new Error('Only pin_contract changes a contract pin');
@@ -90,9 +94,9 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
     handoff_id=text(handoff_id,'handoff_id',150);
     if (!['handoff','complete'].includes(action)) throw new Error('Handoff evidence only applies to handoff or complete');
   }
-  const fingerprint = JSON.stringify({expected_revision, action, summary, assignee_id, artifacts, next_steps,...(handoff_id?{handoff_id}:{}),...pin,...(contract_evidence!==undefined?{contract_evidence}:{})});
+  const fingerprint = JSON.stringify({expected_revision, action, summary, assignee_id, artifacts, next_steps,...(adoption??{}),...(handoff_id?{handoff_id}:{}),...pin,...(contract_evidence!==undefined?{contract_evidence}:{})});
   let policy=null;
-  if (['accept','resume','handoff','pin_contract'].includes(action)) policy=await this.readPolicy();
+  if (['accept','resume','handoff','pin_contract','adopt_decision'].includes(action)) policy=await this.readPolicy();
   else if (['progress','complete'].includes(action)) {
     const {state}=await this.store.read();this.actor(state,agent_id);
     const current=(state.tasks??[]).find(t=>t.id===task_id);
@@ -101,7 +105,7 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
       if (old.fingerprint!==fingerprint) throw new Error('request_id already used for different content');
       return current;
     }
-    if (current?.negotiationId || current?.goalId || current?.contractId) policy=await this.readPolicy();
+    if (current?.negotiationId || current?.goalId || current?.contractId || current?.decisionReceipts?.length) policy=await this.readPolicy();
   }
   return this.change(state => {
     const actor = this.actor(state, agent_id), tasks = records(state), task = tasks.find(t => t.id === task_id);
@@ -112,8 +116,13 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
       return task;
     }
     if (task.revision !== expected_revision) throw new Error('Task revision changed; read task before updating');
-    if(!['block','cancel','evidence','pin_contract'].includes(action))assertContractTask(state,task,actor,this.now());
+    if(!['block','cancel','evidence','pin_contract','adopt_decision'].includes(action))assertContractTask(state,task,actor,this.now());
     if(assignee_id)assertContractTask(state,{...task,assigneeId:assignee_id},actor,this.now());
+    if(['assign','accept','resume','progress','complete','handoff'].includes(action)) {
+      const reasons=decisionTaskReasons(state,task,this.now());
+      if(reasons.length)throw new Error(reasons.join('; '));
+    }
+    let adopted=null;
     if(action!=='evidence') assertCollaborationTaskAction(state,task,actor,policy,this.now(),action);
     if(action!=='evidence') assertTaskReviewAction(state,task,action);
     assertGoalTask(state,task,actor,this.now(),action);
@@ -129,8 +138,13 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
       task.status = 'cancelled';
     } else {
       if (!owner && !(action === 'accept' && task.assigneeId === null)) throw new Error('Only assigned agent can perform this action');
-      const allowed = {pin_contract:['ready','blocked'],evidence:['ready','in_progress','blocked'],accept:['ready'], progress:['in_progress','blocked'], block:['in_progress'], resume:['blocked'], handoff:['in_progress','blocked'], complete:['in_progress']};
+      const allowed = {adopt_decision:['ready','blocked','in_progress'],pin_contract:['ready','blocked'],evidence:['ready','in_progress','blocked'],accept:['ready'], progress:['in_progress','blocked'], block:['in_progress'], resume:['blocked'], handoff:['in_progress','blocked'], complete:['in_progress']};
       if (!allowed[action].includes(task.status)) throw new Error('Invalid task transition');
+      if(action==='adopt_decision') {
+        if(!policy||policy.owner!==actor.owner||this.now()>=Date.parse(policy.expires_at)||!policy.allowed_kinds.includes(task.kind)||!task.paths?.length||task.paths.some(p=>!policy.allowed_paths.some(root=>within(p,root))))throw new Error('Current local policy must cover decision adoption');
+        adopted=assertDecisionAdoption(state,decision_id,task,actor,this.now(),{expectedDecisionRevision:expected_decision_revision,decisionDigest:decision_digest});
+        (task.decisionReceipts??=[]).push(adopted);
+      }
       if(action==='pin_contract') {
         if(task.contractId&&task.contractId!==pin.contractId)throw new Error('Cannot replace contract work identity');
         const candidate={...task,...pin};
@@ -138,7 +152,7 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
         if(!decision.allowed)throw new Error(decision.reasons.join('; '));
         Object.assign(task,pin);
       }
-      if (['accept','resume'].includes(action) || ((task.negotiationId || task.goalId || task.contractId) && ['progress','complete'].includes(action))) {
+      if (['accept','resume'].includes(action) || ((task.negotiationId || task.goalId || task.contractId || task.decisionReceipts?.length) && ['progress','complete'].includes(action))) {
         const decision=eligibility(state,actor,task,policy,this.now());
         if (!decision.allowed) throw new Error(decision.reasons.join('; '));
       }
@@ -162,7 +176,7 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
     if (['accept','assign','handoff','cancel','complete'].includes(action)) delete task.routing;
     const now = this.now(); task.revision++; task.updatedAt = now; actor.seenAt = now;
     task.history.push({revision:task.revision, actorId:agent_id, requestId:request_id, fingerprint,
-      action, summary, artifacts, nextSteps:next_steps, assigneeId:task.assigneeId, status:task.status, createdAt:now,...(handoff_id?{handoffId:handoff_id}:{}),...(task.contractId?{contractId:task.contractId,contractDigest:task.contractDigest}:{}),...(contract_evidence?{contractEvidence:contract_evidence}:{})});
+      ...(adopted?{decisionId:adopted.decisionId,version:adopted.version,digest:adopted.digest}:{}),action, summary, artifacts, nextSteps:next_steps, assigneeId:task.assigneeId, status:task.status, createdAt:now,...(handoff_id?{handoffId:handoff_id}:{}),...(task.contractId?{contractId:task.contractId,contractDigest:task.contractDigest}:{}),...(contract_evidence?{contractEvidence:contract_evidence}:{})});
     return task;
   });
 }

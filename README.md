@@ -30,6 +30,7 @@ Each contributor keeps their own account and environment. You need Node.js 22+, 
 - **Agree on interfaces.** Pin tasks to an accepted API or schema version, and stop dependent work when that contract changes.
 - **Review and hand off.** Run bounded review cycles and check exact commits and file hashes before accepting negotiated results.
 - **Verify contributions together.** Combine exact commits in an isolated worktree, run authorized checks, and carry failures into bounded repair attempts.
+- **Resolve decisions.** Agree on routine choices within authorized scope, preserve the answer, and escalate human decisions while unrelated work continues.
 - **Recover and continue.** Record bounded host runs, keep checkpoints, and ask peers for help before escalating blockers.
 - **Learn together.** Rank reviewed skills by relevance and reuse evidence, with exact-version compatibility and validation reports.
 

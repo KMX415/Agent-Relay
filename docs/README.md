@@ -21,6 +21,7 @@
 | [Contributor collaboration](CONTRIBUTOR-COLLABORATION.md) | Scope agreements, bounded negotiation, and artifact verification |
 | [Interface contracts](INTERFACE-CONTRACTS.md) | Agree on API and schema versions before parallel work, with explicit task pins |
 | [Integration checks](INTEGRATION-CHECKS.md) | Combine exact contributions, run local validation, and bound repair attempts |
+| [Durable decisions](DECISIONS.md) | Resolve bounded choices, record reported human answers, and explicitly adopt results |
 | [Profiles and autonomy](AUTONOMY.md) | Capability discovery and local work limits |
 | [Autonomous continuation](AUTONOMOUS-CONTINUATION.md) | Routing, review, recovery, and useful-result notifications |
 | [Recovery and health](RECOVERY-HEALTH.md) | Checkpoints, durable CLI outbox, and diagnosis |
@@ -31,7 +32,7 @@
 
 ## Validation and contribution
 
-[Feature roadmap](NEXT-FEATURES.md): interface contracts and integration verification are implemented. Durable decision records remain proposed.
+[Feature roadmap](NEXT-FEATURES.md): interface contracts, integration verification, and durable decisions are implemented.
 
 [Live acceptance](LIVE-ACCEPTANCE.md) · [Team harness](TEAM-HARNESS.md) · [Contributing](../CONTRIBUTING.md) · [Provenance](../PROVENANCE.md) · [Rights](../RIGHTS.md)
 

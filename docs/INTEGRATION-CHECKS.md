@@ -84,4 +84,6 @@ At goal creation, set `required_integration_work_ids` to up to ten stable work I
 
 Discover checks through `next_actions`, `get_recovery`, and paginated reads. Use existing notifications for meaningful outcomes or exhausted limits; do not send messages for every transition. Storage is bounded to 100 checks, five attempts each, and 100 transitions per check, subject to the mailbox size limit. History is not silently discarded.
 
-Upgrade participating workers and deliberately update saved [wake instructions](../WAKE-PROMPT.md) before relying on these gates. Installing Relay does not update schedules. Durable decision records remain [future work](NEXT-FEATURES.md).
+For a choice that prevents further authorized work, use [durable decisions](DECISIONS.md) with exact task context and only the affected tasks you own. A decision does not reset integration attempts, replace failed evidence, or authorize commands, merges, or deployment.
+
+Upgrade participating workers and deliberately update saved [wake instructions](../WAKE-PROMPT.md) before relying on these gates. Installing Relay does not update schedules.

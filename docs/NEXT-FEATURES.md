@@ -1,12 +1,12 @@
 # Next autonomous collaboration features
 
-Status: interface contracts and integration verification are implemented; durable decision records remain proposed. These additions build on existing goals, tasks, agreements, reviews, handoffs, recovery, and skills. They run through MCP/CLI and each host's existing wake schedule. No dashboard interaction is required.
+Status: interface contracts, integration verification, and durable decisions are implemented. These additions build on existing goals, tasks, agreements, reviews, handoffs, recovery, and skills. They run through MCP/CLI and each host's existing wake schedule. No dashboard interaction is required.
 
 The outcome is useful progress across separately authorized contributors: agents agree on interfaces, build independently, verify that their results work together, and resolve routine questions without humans carrying messages. One human using several providers benefits from the same workflow.
 
 ## 1. Shared interface contracts
 
-Implemented. See the [interface contract guide](INTERFACE-CONTRACTS.md) for tools, task pins, evidence, and continuation. Durable decision records described later remain future work.
+Implemented. See the [interface contract guide](INTERFACE-CONTRACTS.md) for tools, task pins, evidence, and continuation.
 
 **Problem:** two agents can finish their assigned tasks and still disagree about an API, schema, configuration format, or error behavior. File claims and task dependencies do not describe those expectations.
 
@@ -65,13 +65,15 @@ Two contributions pass separately but fail together. The integration worker must
 
 ## 3. Durable decisions with bounded agent authority
 
+Implemented. See [durable decisions](DECISIONS.md) for exact responders, bounded question revisions, reported human answers, and explicit task adoption.
+
 **Problem:** decisions buried in messages are easy to miss or repeat. Existing notifications report blockers, but do not provide a structured resolution that invalidates when the underlying work changes.
 
 **Example:** agents choose between two compatible implementations within the agreed interface. If either option needs broader repository access or a changed product requirement, they consolidate the question for the responsible human while unrelated tasks continue.
 
 ### Records and tools
 
-Proposed tools: `request_decision`, `get_decision`, `list_decisions`, and `resolve_decision`.
+Tools: `request_decision`, `get_decision`, `list_decisions`, and `resolve_decision`.
 
 A record includes a stable issue key, linked goal/tasks and revisions, requester, exact required decision owners, question, bounded options and tradeoffs, evidence references, deadline, and whether existing authorization permits agent resolution. It identifies blocked task IDs explicitly; a question must not freeze an entire team by default.
 
@@ -81,7 +83,8 @@ Statuses are `open`, `resolved`, `expired`, and `superseded`. Resolution records
 
 - Within existing scope, designated agents may resolve implementation choices. Permission, access, budget expansion, merge, deployment, and product-scope changes require the responsible humans through the existing host interaction.
 - Cross-owner decisions require all named owners' authorized responses to the same option and revision. Silence or deadline expiry is never agreement.
-- A resolution neither edits local policies nor automatically resumes tasks. Recipients recheck current scope and dependencies before acting. Changed linked revisions make a resolution stale and require explicit reassessment.
+- A resolution neither edits local policies nor automatically resumes tasks. Assignees explicitly adopt its exact revision and digest through `update_task` before affected work can continue, then recheck scope and dependencies. Changed linked revisions make an unadopted resolution stale; adoption receipts account for their own task writes, and adopted choices remain historical through subsequent progress.
+- Reassessment uses the same issue key and the original participants, task IDs, deadline, and revision budget (default three, maximum five). Each question version requires fresh answers and adoption; changing identifiers must not reset limits.
 - Repeated wakes discover the same issue record. Notify a human once per actionable revision through an authorized host channel, using existing acknowledgement behavior. No answer-to-answer messages and no extra automation.
 
 ### Acceptance tests
@@ -90,7 +93,7 @@ Verify an in-scope choice resolved agent-to-agent, an access expansion left bloc
 
 ## Shared implementation requirements
 
-Contract and integration writes use revision checks, stable request IDs, and the existing durable CLI outbox. The remaining proposal must do the same. Include paginated reads, `next_actions`, recovery, and meaningful notifications from the first release. Bound record counts, examples, responses, and evidence; check the serialized mailbox size before committing any transition. Full storage fails without partial effects or silent deletion.
+Contract, integration, and decision writes use revision checks, stable request IDs, and the existing durable CLI outbox. They include paginated reads, `next_actions`, recovery, and meaningful notifications. Record counts, examples, responses, and evidence are bounded; the serialized mailbox size is checked before committing transitions. Full storage fails without partial effects or silent deletion.
 
 Keep old mailboxes and ordinary tasks compatible. Add optional collections with explicit schema validation. Enforce transitions in shared domain code used by both MCP and CLI. Update tool definitions, guides, README, and wake instructions in the same implementation change. Saved schedules still require deliberate prompt updates; toolkit changes do not activate them.
 
@@ -100,7 +103,7 @@ These remain cooperative controls among mailbox writers, not an isolation bounda
 
 1. **Interface contracts (implemented):** records and task gates give parallel builders a shared target. Synthetic validation does not establish independent human participation.
 2. **Integration verification (implemented):** exact-input evidence gates and isolated local validation connect reviewed contributions to combined test results.
-3. **Durable decisions:** consolidate contract and integration blockers, then verify authorized resolution and selective continuation.
+3. **Durable decisions (implemented):** consolidate contract and integration blockers, record authorized responses, and require explicit adoption before selective continuation.
 
 Use the existing team harness for deterministic failure cases, with no additional provider accounts or cloud infrastructure. After those pass, use already connected local providers for one bounded live workflow when authorized. Label simulated owners, provider execution, and observed scheduled runs separately. Neither simulation nor multiple agents under one account proves collaboration among independent humans; that remains a later acceptance step.
 
