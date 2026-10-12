@@ -13,6 +13,7 @@
     "test": "node --test test/*.test.mjs",
     "smoke": "node smoke.mjs",
     "doctor": "node doctor.mjs",
+    "activate": "node activation.mjs",
     "viewer": "node viewer.mjs",
     "demo": "node demo.mjs"
   },

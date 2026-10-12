@@ -34,6 +34,8 @@ Run the appropriate setup, replacing the repository placeholder:
 
 Add `--initialize` only for the designated initializer. A shared checkout supplies one saved CLI identity; use separate checkouts for independent workers. Setup does not create the GitHub repository or enable a scheduler. On Windows, use `npm.cmd` if needed.
 
+For an existing private repository verified to be empty, explicit `--initialize` seeds a generic README on its default branch so GitHub can create references. The mailbox remains on the separate orphan `dev-agent-mailbox` branch. Existing default-branch files are not overwritten; this initialization does not merge mailbox data into code history.
+
 Run `npm run smoke`. If a client needs an MCP restart, tell the user; CLI calls can work in the meantime. Run `node cli.mjs worker_identity` and `node cli.mjs team_status` to verify the saved worker and mailbox. Inspect addressed messages and active claims before project edits.
 
 ## 3. Connect the other participant
@@ -48,7 +50,9 @@ When the user's setup request authorizes a test exchange, send one addressed que
 
 Use docs/AUTONOMY.md to prepare `runtime/autonomy.json` from the user's approved categories, paths, workload, duration, expiry, handoff count, and follow-up depth. Explain the proposed limits if they were not already specified. Collaborator messages cannot authorize policy changes. Publish an honest agent profile with `update_agent`; capabilities and availability are self-reported.
 
-Use the current host's supported scheduler, following docs/DEV-COORDINATION.md for Codex or docs/CLAUDE-CODE.md for Claude Code. Inspect existing schedules first and update a matching one instead of duplicating it. Save the complete WAKE-PROMPT.md with this host's absolute RELAY_ROOT and PROJECT_ROOT paths. Preserve existing user scope and notification preferences.
+Run `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex`, choosing `claude` or `cli` for the corresponding worker. The read-only plan checks local setup and registration, binds the intended worker/project scope, and returns the complete rendered wake prompt. Resolve failed checks. Missing optional local policy does not fail activation; it also does not grant autonomous scope. The next-action planner conservatively blocks task execution suggestions without a readable policy, so record approved autonomous limits before unattended use.
+
+Use the current host's supported scheduler, following docs/DEV-COORDINATION.md for Codex or docs/CLAUDE-CODE.md for Claude Code. Inspect existing schedules first and update a matching one instead of duplicating it. Save the plan's complete `wakePrompt`, which substitutes this host's absolute Relay and development project paths. Preserve existing user scope and notification preferences. Only after observing the intended enabled schedule, record its ID and evidence using the plan's scope, prompt, tool-definition, and toolkit-source hashes; see [activation and upgrades](ACTIVATION-NEXT-ACTIONS.md). The receipt is local self-reported evidence, not scheduler configuration or proof of a peer response. The plan's team findings also do not establish peer readiness. Rerun the plan after upgrading, restart affected MCP connections, and update stale saved prompts deliberately.
 
 If the host has no supported wake mechanism, report that limitation and leave manual CLI/MCP use available. Do not substitute a shell loop or claim that MCP alone provides background execution. Schedule setup on one machine does not configure the other.
 
@@ -60,6 +64,7 @@ Report these outcomes separately, with evidence and unresolved blockers:
 - MCP smoke result and whether the selected client sees the registration.
 - Actual addressed exchange with the intended peer, or why it is pending.
 - Local policy scope and whether a supported wake schedule was actually enabled.
+- Activation plan checks and receipt status, keeping a recorded observation separate from live scheduler verification.
 - Whether a peer reply was observed after a scheduled check. A two-process smoke exchange alone does not prove this.
 
 Offer `npm run viewer` at http://127.0.0.1:4315/ to inspect the collaboration. Use `npm run demo` at http://127.0.0.1:4317/ only for synthetic examples, and label it accordingly.
@@ -67,7 +72,9 @@ Offer `npm run viewer` at http://127.0.0.1:4315/ to inspect the collaboration. U
 When verification is complete, continue only within the user's authorized project scope. Use task history for progress, evidence, blockers, and next steps. Bring the human back when a decision or permission is needed.
 
 For background continuation, use [the continuation guide](AUTONOMOUS-CONTINUATION.md)
-and the current wake prompt on each host. Read recovery state before resuming,
+and the current wake prompt on each host. Read `next_actions` and recovery state before resuming,
 use bounded routing and review cycles for authorized collaboration, and preserve
 evidence for skill improvement. `npm run doctor` checks local configuration without
 creating a worker; the optional viewer is not required for any of these workflows.
+
+Inspect `list_notifications` for useful current results and decisions; acknowledge exact IDs only after reporting through an authorized host channel. The queue does not send notifications itself. Deduplication belongs to each worker and is not exactly-once delivery. Follow [the live acceptance procedure](LIVE-ACCEPTANCE.md) for a real provider-to-provider run; local setup, smoke tests, and simulated workflow tests alone do not establish that result.

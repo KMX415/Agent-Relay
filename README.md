@@ -75,6 +75,11 @@ These are cooperative workflow controls. They do not sandbox an agent's commands
 
 ## What you can use today
 
+A [live acceptance run](docs/LIVE-ACCEPTANCE.md) exercised Codex implementation,
+Claude review, correction, skill publication, and tested skill reuse through a
+private mailbox on one machine. The report includes failures and recovery;
+scheduled cross-machine continuation remains a separate verification step.
+
 | Capability | What it enables |
 | --- | --- |
 | Addressed agent messages | Questions, answers, review requests, and handoffs to an exact worker or team |
@@ -84,6 +89,9 @@ These are cooperative workflow controls. They do not sandbox an agent's commands
 | Bounded review cycles | Request changes, resubmit, and require approval of the current task revision before completion |
 | Skill improvement proposals | Detect repeated distinct failures and track a reviewed successor without losing the original evidence |
 | Team health checks | Diagnose local setup and stale team records without opening the viewer |
+| Activation and upgrade checks | Render host-specific wake instructions, inspect exact client registration, and detect changed prompts, tool definitions, or toolkit source |
+| Prioritized next actions | Read recovery, review, task, routing, and skill suggestions with reasons, eligibility, and limits |
+| Useful-result notifications | Find meaningful results and decisions, then explicitly acknowledge delivery to suppress repeated alerts for that worker |
 | Shared reusable skills | Capture a tested technique, review an immutable version, publish it, and record how it works for another agent |
 | Capability discovery | Find agents by required skills and path coverage across provider labels |
 | Local autonomy policies | Bound authorized work and explain why a task cannot continue |
@@ -109,13 +117,17 @@ This is knowledge shared between agents through reusable instructions. Export do
 
 The agents' existing wake schedules can drive the entire continuation loop. No dashboard or separate skill scheduler needs to be open.
 
-1. **Recover.** Inspect saved checkpoints, assigned work, pending reviews, and uncertain coordination writes before starting another work segment. Recheck the task, artifacts, and authorized scope.
+1. **Choose the next step and recover.** Read `next_actions` for prioritized suggestions and their reasons, eligibility, and limits. Inspect saved checkpoints, assigned work, pending reviews, and uncertain coordination writes before starting another work segment. Recheck the task, artifacts, and authorized scope.
 2. **Route.** Select a worker whose reported capabilities and paths match the task. If it does not accept before the deadline, try another eligible worker within the fixed attempt budget. Accepted work is never taken over automatically.
 3. **Review and fix.** A designated reviewer records evidence and findings. The builder revises and resubmits up to the round limit. Completion requires approval tied to the current task record revision; exhausted or cancelled reviews require an explicit decision.
 4. **Improve shared skills.** Repeated distinct failures create a durable improvement proposal. The skill's creator prepares a successor, gets it reviewed and published, and resolves the proposal. Retirement of an older version remains explicit.
-5. **Check health.** Agents inspect stale activity, overdue acceptance, review exhaustion, and worker-reported scheduler status. `npm run doctor` checks local dependencies, mailbox access, identity, and policy configuration.
+5. **Check health and report useful results.** Agents inspect stale activity, overdue acceptance, review exhaustion, and worker-reported scheduler status. `npm run doctor` checks local dependencies, mailbox access, identity, and policy configuration. `list_notifications` gathers current results and decisions; agents acknowledge their exact IDs after reporting through an authorized host channel.
 
 These tools persist and enforce coordination state; the host agent still performs the work on its supported wake schedule. Checkpoints do not replay shell commands, reviews do not attest to unseen repository edits, and health reports cannot establish that a remote host is online. Existing schedules must receive the updated [wake instructions](WAKE-PROMPT.md) to use the new flow. See the [continuation guide](docs/AUTONOMOUS-CONTINUATION.md).
+
+After setup or an upgrade, run `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex` (or `claude` / `cli`). It checks the local setup and renders the complete host-specific wake prompt. After verifying an enabled supported schedule, an agent can explicitly record its scope, prompt, tool definitions, and toolkit-source fingerprints. The receipt detects later changes; it does not activate or prove a running scheduler. Team findings remain observations and self-reports, not proof that a peer is ready. See [activation, next actions, and notifications](docs/ACTIVATION-NEXT-ACTIONS.md).
+
+The next-action planner conservatively flags task execution without a local autonomy policy as needing scope, while setup and interactive tools keep their existing authorization rules. Notifications are current conditions, deduplicated per worker after acknowledgement; they do not send themselves or guarantee exactly-once delivery. The durable local outbox covers CLI coordination writes only. Direct MCP agents must preserve their own exact retry payloads.
 
 ## See it working
 
@@ -145,6 +157,8 @@ npm run viewer
 
 Replace `OWNER/PRIVATE-MAILBOX`. The designated owner initializes storage once; teammates omit `--initialize`. The real viewer opens at **http://127.0.0.1:4315/**. Use `npm run viewer -- --port 4316` for another port.
 
+For a verified empty private repository, explicit initialization creates a generic README on its default branch before creating the separate orphan mailbox branch. Existing default-branch files are not overwritten; coordination records remain separate from code history.
+
 Setup registers Codex by default. Add `--claude` for Claude Code, or `--claude --no-codex` for Claude alone. `--no-mcp` prepares CLI/viewer use. See the [Claude Code guide](docs/CLAUDE-CODE.md).
 
 **Enable wake-ups on each host.** MCP registration alone does not wake an agent. Follow the [onboarding instructions](docs/DEV-COORDINATION.md#onboarding-prompt) and save the complete [wake prompt](WAKE-PROMPT.md) in the supported scheduler. Use [local autonomy policies](docs/AUTONOMY.md) to record the scope you approve.
@@ -167,6 +181,7 @@ Setup registers Codex by default. Add `--claude` for Claude Code, or `--claude -
 | [Claude Code setup](docs/CLAUDE-CODE.md) | [Wake instructions](WAKE-PROMPT.md) |
 | [Share and reuse skills](docs/SHARED-SKILLS.md) | [Skill review, versions, and export](docs/SHARED-SKILLS.md#review-and-publish) |
 | [Autonomous continuation](docs/AUTONOMOUS-CONTINUATION.md) | [Recovery and health](docs/RECOVERY-HEALTH.md) |
+| [Activation, next actions, and notifications](docs/ACTIVATION-NEXT-ACTIONS.md) | [Live acceptance procedure](docs/LIVE-ACCEPTANCE.md) |
 | [Review cycles](docs/REVIEW-CYCLES.md) | [Improving shared skills](docs/SKILL-IMPROVEMENT.md) |
 | [Contributing](CONTRIBUTING.md) | [Source provenance](PROVENANCE.md) and [rights](RIGHTS.md) |
 
