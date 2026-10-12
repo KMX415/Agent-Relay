@@ -1,5 +1,6 @@
 import { profileView, taskKinds } from './coordination.mjs';
 import { taskStatuses } from './tasks.mjs';
+import { skillDigest } from './skills.mjs';
 
 const isText = value => typeof value === 'string';
 const isList = value => Array.isArray(value) && value.every(isText);
@@ -7,6 +8,7 @@ const requireRecord = ok => { if (!ok) throw new Error('Malformed coordination s
 export function dashboard(repo,state,fetchedAt) {
   requireRecord(state.agents && typeof state.agents==='object' && !Array.isArray(state.agents));
   requireRecord(state.tasks===undefined || Array.isArray(state.tasks));
+  requireRecord(state.skills===undefined || Array.isArray(state.skills));
   const agents=Object.values(state.agents).map(a=>{
     requireRecord(a && isText(a.id) && isText(a.owner) && isText(a.label));
     if (a.profile) requireRecord(isText(a.profile.provider) && isList(a.profile.capabilities) &&
@@ -42,6 +44,35 @@ export function dashboard(repo,state,fetchedAt) {
         return {id,title:dep?.title??id,status:dep?.status??'missing'};
       }),history};
   });
-  return {repo,fetchedAt:new Date(fetchedAt).toISOString(),tasks,agents,
+  const skills=(state.skills??[]).map(s=>{
+    requireRecord(s && ['id','name','title','description','whenToUse','createdBy','digest'].every(k=>isText(s[k])) &&
+      ['draft','published','retired'].includes(s.status) && Number.isInteger(s.version) && Number.isInteger(s.revision) &&
+      Number.isFinite(s.createdAt) && Number.isFinite(s.updatedAt) &&
+      ['steps','validation','limitations','tags','evidence'].every(k=>isList(s[k])) &&
+      ['sourceTaskId','supersedesId'].every(k=>s[k]===null||isText(s[k])) &&
+      ['reviews','uses','history'].every(k=>Array.isArray(s[k])));
+    requireRecord(skillDigest(s) === s.digest);
+    const entry=h=>{
+      requireRecord(h && ['actorId','summary'].every(k=>isText(h[k])) && Number.isFinite(h.createdAt));
+      return {actorId:h.actorId,actorLabel:label(h.actorId),summary:h.summary,createdAt:h.createdAt};
+    };
+    const reviews=s.reviews.map(h=>{
+      requireRecord(h && ['approve','request_changes'].includes(h.verdict) && isList(h.evidence));
+      return {...entry(h),verdict:h.verdict,evidence:h.evidence};
+    });
+    const uses=s.uses.map(h=>{
+      requireRecord(h && ['success','failure'].includes(h.outcome) && isList(h.evidence) && (h.taskId===null||isText(h.taskId)));
+      return {...entry(h),outcome:h.outcome,evidence:h.evidence,taskId:h.taskId};
+    });
+    const history=s.history.map(h=>{
+      requireRecord(h && isText(h.action));return {...entry(h),action:h.action};
+    });
+    return {id:s.id,name:s.name,title:s.title,description:s.description,whenToUse:s.whenToUse,
+      steps:s.steps,validation:s.validation,limitations:s.limitations,tags:s.tags,evidence:s.evidence,
+      sourceTaskId:s.sourceTaskId,supersedesId:s.supersedesId,version:s.version,revision:s.revision,
+      createdBy:s.createdBy,creatorLabel:label(s.createdBy),createdAt:s.createdAt,updatedAt:s.updatedAt,
+      status:s.status,digest:s.digest,reviews,uses,history};
+  });
+  return {repo,fetchedAt:new Date(fetchedAt).toISOString(),tasks,agents,skills,
     counts:Object.fromEntries(taskStatuses.map(status=>[status,tasks.filter(t=>t.status===status).length]))};
 }

@@ -2,7 +2,7 @@ import { renderDashboard } from './dashboard.mjs';
 const el = id => document.getElementById(id);
 const nodes = new Map();
 let messages = [], loaded = false, busy = false, fetchedAt = 0, error = '';
-let view='tasks', dashboard={tasks:[],agents:[],counts:{}};
+let view='tasks', dashboard={tasks:[],agents:[],skills:[],counts:{}};
 
 function text(tag, value, className) {
   const node = document.createElement(tag);
@@ -31,7 +31,7 @@ function makeMessage(message) {
 }
 function render() {
   const query = el('search').value.trim().toLocaleLowerCase();
-  for(const name of ['tasks','agents','messages']) {
+  for(const name of ['tasks','agents','skills','messages']) {
     el(name).hidden=view!==name; el('view-'+name).setAttribute('aria-pressed',String(view===name));
   }
   el('task-status-label').hidden=view!=='tasks'; el('task-owner-label').hidden=view!=='tasks';
@@ -62,7 +62,7 @@ function render() {
   if(view!=='messages') {
     el('count').textContent=loaded?result.count+' of '+result.total+' '+view:'';
     el('empty').hidden=!loaded||result.count>0;
-    el('empty').textContent=result.total?'No '+view+' match these filters.':view==='tasks'?'No shared tasks yet. Create one through your agent or the CLI.':'No agents have joined yet.';
+    el('empty').textContent=result.total?'No '+view+' match these filters.':view==='tasks'?'No shared tasks yet. Create one through your agent or the CLI.':view==='skills'?'No shared skills yet. Agents can propose a reusable procedure for review.':'No agents have joined yet.';
   }
 }
 function status() {
@@ -72,13 +72,13 @@ function status() {
 }
 async function refresh() {
   if (busy) return;
-  busy = true; el('refresh').disabled = true; for(const name of ['messages','tasks','agents'])el(name).setAttribute('aria-busy','true'); status();
+  busy = true; el('refresh').disabled = true; for(const name of ['messages','tasks','agents','skills'])el(name).setAttribute('aria-busy','true'); status();
   try {
     const responses=await Promise.all(['/api/messages','/api/dashboard'].map(url=>fetch(url,{cache:'no-store',signal:AbortSignal.timeout(70000)})));
     if(responses.some(r=>!r.ok))throw new Error('Mailbox unavailable');
     const [data,team]=await Promise.all(responses.map(r=>r.json()));
     if (!Array.isArray(data.messages) || !Number.isFinite(new Date(data.fetchedAt).getTime())) throw new Error('Unexpected mailbox response. Restart the viewer and retry.');
-    if(!Array.isArray(team.tasks)||!Array.isArray(team.agents)||!team.counts)throw new Error('Unexpected dashboard response');
+    if(!Array.isArray(team.tasks)||!Array.isArray(team.agents)||!Array.isArray(team.skills)||!team.counts)throw new Error('Unexpected dashboard response');
     dashboard=team;
     messages = data.messages.slice().sort((a,b) => b.sequence-a.sequence);
     fetchedAt = new Date(data.fetchedAt).getTime(); loaded = true; error = '';
@@ -87,11 +87,11 @@ async function refresh() {
   } catch (failure) {
     error = failure.name === 'TimeoutError' ? 'Mailbox request timed out. Check connectivity and retry.' : 'Mailbox unavailable. Check GitHub login and connectivity, then retry.';
   } finally {
-    busy = false; el('refresh').disabled = false; for(const name of ['messages','tasks','agents'])el(name).setAttribute('aria-busy','false'); status();
+    busy = false; el('refresh').disabled = false; for(const name of ['messages','tasks','agents','skills'])el(name).setAttribute('aria-busy','false'); status();
   }
 }
 el('search').addEventListener('input', render);
-for(const name of ['tasks','agents','messages'])el('view-'+name).addEventListener('click',()=>{view=name;render();});
+for(const name of ['tasks','agents','skills','messages'])el('view-'+name).addEventListener('click',()=>{view=name;render();});
 el('task-status').addEventListener('change',render);
 el('task-owner').addEventListener('change',render);
 el('refresh').addEventListener('click', refresh);

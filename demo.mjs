@@ -34,5 +34,24 @@ blocked=await update(blocked,'accept','Inspecting the project scope.');
 await update(blocked,'block','Waiting for the owner to choose allowed task categories.',{next_steps:['Confirm scope with the owner']});
 await create('Exercise the end-to-end handoff',undefined,{kind:'testing',depends_on:[handoff.id]});
 await mailbox.send({agent_id:builder.id,to:reviewer.id,kind:'handoff',body:'The task lifecycle is ready for review. The task record includes the branch and remaining checks.',request_id:'demo-message'});
+let skill=await mailbox.createSkill({agent_id:reviewer.id,name:'document-a-task-handoff',
+  title:'Write a handoff another agent can continue',
+  description:'Turn completed work into a concrete, reviewable next step for a teammate.',
+  when_to_use:'Use after finishing an authorized implementation segment that needs independent review.',
+  steps:['Read the task acceptance criteria and current revision.',
+    'Record what changed, the validation performed, and artifact references.',
+    'Name the exact receiving worker and write actionable next steps.',
+    'Hand off using the current revision and a stable request ID.'],
+  validation:['The receiver can identify the artifact, remaining checks, and expected result.'],
+  limitations:['A handoff does not authorize a merge or deployment.','This demo evidence is synthetic.'],
+  tags:['handoff','documentation'],evidence:['docs/SHARED-TASKS.md'],source_task_id:docs.id,request_id:'demo-skill'});
+skill=await mailbox.reviewSkill({agent_id:builder.id,skill_id:skill.id,expected_revision:skill.revision,
+  request_id:'demo-skill-review',verdict:'approve',summary:'Procedure covers context, evidence, and the receiving worker.',
+  evidence:['Synthetic review of the completed documentation task']});
+skill=await mailbox.updateSkill({agent_id:reviewer.id,skill_id:skill.id,expected_revision:skill.revision,
+  request_id:'demo-skill-publish',action:'publish',summary:'Published after independent worker review.'});
+await mailbox.recordSkillUse({agent_id:builder.id,skill_id:skill.id,request_id:'demo-skill-use',
+  outcome:'success',summary:'Used the procedure to prepare an actionable lifecycle review handoff.',
+  evidence:['Synthetic handoff includes branch and two next steps']});
 const server=await listenViewer({store,port:4317});
 console.log('Synthetic Agent Relay demo: http://127.0.0.1:'+server.address().port);

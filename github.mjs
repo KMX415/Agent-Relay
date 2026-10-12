@@ -52,7 +52,7 @@ export class GitHubStore {
     const file = await this.api(`repos/${this.repo}/contents/${STORAGE_FILE}?ref=${STORAGE_BRANCH}`);
     if (file.encoding !== 'base64' || file.size > 750000) throw new Error('Unsupported or oversized mailbox state');
     const state = JSON.parse(Buffer.from(file.content, 'base64').toString('utf8'));
-    if (state.version !== 1 || !state.agents || !Array.isArray(state.messages) || !Array.isArray(state.claims) || (state.tasks !== undefined && !Array.isArray(state.tasks))) throw new Error('Unsupported mailbox schema');
+    if (state.version !== 1 || !state.agents || !Array.isArray(state.messages) || !Array.isArray(state.claims) || (state.tasks !== undefined && !Array.isArray(state.tasks)) || (state.skills !== undefined && !Array.isArray(state.skills))) throw new Error('Unsupported mailbox schema');
     return { state, sha: file.sha };
   }
   async write(state, sha) {

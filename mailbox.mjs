@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { createTask, listTasks, getTask, updateTask } from './tasks.mjs';
 import { updateAgent, findAgents, checkTask, profileView } from './coordination.mjs';
+import { createSkill, listSkills, getSkill, reviewSkill, updateSkill, recordSkillUse, exportSkill } from './skills.mjs';
 const text = (value, name, max = 4000) => {
   if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error(`Invalid ${name}`);
   return value.trim();
@@ -14,6 +15,13 @@ const overlap = (a,b) => a === b || a.startsWith(b+'/') || b.startsWith(a+'/');
 const recipient = (m, a) => m.to === a.id || m.to.toLowerCase() === a.owner.toLowerCase() || m.to === 'team';
 
 export class Mailbox {
+  createSkill = createSkill;
+  listSkills = listSkills;
+  getSkill = getSkill;
+  reviewSkill = reviewSkill;
+  updateSkill = updateSkill;
+  recordSkillUse = recordSkillUse;
+  exportSkill = exportSkill;
   updateAgent = updateAgent;
   findAgents = findAgents;
   checkTask = checkTask;
