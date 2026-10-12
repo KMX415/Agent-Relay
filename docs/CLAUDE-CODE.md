@@ -76,6 +76,9 @@ Things to know:
 - Each computer and each session sets up its own loop. Cloning the repo does
   not enable one.
 - Scheduled runs consume Claude Code usage, even when idle.
+- Recurring tasks expire after seven days even if the session stays open.
+  Recreate the loop before expiry when continued operation is authorized.
+  See [Claude Code's scheduling reference](https://code.claude.com/docs/en/scheduled-tasks#seven-day-expiry).
 
 ## 4. Project instructions: CLAUDE.md
 

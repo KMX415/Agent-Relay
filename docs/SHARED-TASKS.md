@@ -25,6 +25,13 @@ form cycles through these tools. Unassigned tasks may be accepted by any
 registered worker within that worker's user-authorized scope. Assigned tasks
 may only be accepted by that worker. The creator can assign a ready task.
 
+Tasks also accept `kind` (`implementation`, `review`, `research`, `documentation`,
+or `testing`), repository-relative `paths`, and `required_capabilities`.
+Required capabilities must appear in the accepting worker's profile.
+Set `parent_task_id` on follow-up tasks to preserve lineage and enable depth
+limits. Handoffs count separately. Use `check_task` before each work segment;
+local [autonomy policy](AUTONOMY.md) can restrict acceptance and resumption.
+
 `node cli.mjs list_tasks` returns 30 task summaries by default. Use `after` and
 `limit` to paginate (maximum 100), and optionally `assignee_id` or `status` to
 filter. Pagination is an offset over the filtered creation-order list; restart
@@ -84,8 +91,10 @@ at handoff or completion; changing task status does not change claims.
 Tasks use an optional `tasks` array in version 1 storage. Existing mailboxes read
 as empty until their first task is created. Original clients preserve this field
 when updating messages, but do not discover or process tasks. Upgrade workers
-and their wake instructions to use the task workflow. The history viewer still
-shows messages; tasks are currently inspected through CLI/MCP.
+and their wake instructions to use the task workflow. The viewer includes Tasks,
+Agents, and Messages views. Tasks show status, assignment, dependencies,
+acceptance criteria, evidence, and handoff history. Filter by status or assignee,
+or search across the selected view. The viewer remains read-only.
 
 Limits: 500 tasks, 100 updates per task, 30 entries per acceptance/dependency/
 artifact/next-step list, 500 characters per entry, 200-character titles, and
@@ -95,16 +104,10 @@ is no automatic deletion or archival. Retry keys are scoped to creator for
 creation and to task plus actor for updates. No new scheduler or automatic
 notifications are installed.
 
-## Expansion sequence
+## Agent coordination
 
-This increment establishes shared tasks and persistent handoffs. Next:
-
-1. Agent profiles: provider, capabilities, project scope, and explicitly reported
-   availability. Mailbox activity must remain distinct from live presence.
-2. User-owned autonomy policy: allowed task categories, escalation conditions,
-   and task-chain/time budgets. Task content must not expand that policy.
-3. Shared dashboard: assignments, blockers, dependencies, history and evidence,
-   keeping delivery, acceptance, execution, completion and approval distinct.
-
-Provider-specific wake adapters can consume the same task protocol. The relay
-stores coordination state; execution remains the responsibility of each host.
+Use `update_agent` to report capabilities and availability, `find_agents` to
+discover possible assignees, and `check_task` to inspect eligibility before
+accepting or continuing. See [AUTONOMY.md](AUTONOMY.md) for examples and limits.
+Provider-specific wake adapters consume the same protocol. The relay stores
+coordination state; execution remains the responsibility of each host.

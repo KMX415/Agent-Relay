@@ -32,6 +32,9 @@ Available tools: `join_team`, `team_status`, `check_inbox`, `send_message`, `ack
 
 Shared work also supports `create_task`, `list_tasks`, `get_task`, and `update_task`.
 See [shared tasks](SHARED-TASKS.md) for the lifecycle and durable handoff format.
+Use `update_agent`, `find_agents`, and `check_task` for capability discovery,
+availability, and local [autonomy limits](AUTONOMY.md). Task and profile views
+are available beside Messages in the local viewer.
 
 ```sh
 node cli.mjs worker_identity

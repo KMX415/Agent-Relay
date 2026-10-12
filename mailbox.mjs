@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { createTask, listTasks, getTask, updateTask } from './tasks.mjs';
+import { updateAgent, findAgents, checkTask, profileView } from './coordination.mjs';
 const text = (value, name, max = 4000) => {
   if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error(`Invalid ${name}`);
   return value.trim();
@@ -13,11 +14,14 @@ const overlap = (a,b) => a === b || a.startsWith(b+'/') || b.startsWith(a+'/');
 const recipient = (m, a) => m.to === a.id || m.to.toLowerCase() === a.owner.toLowerCase() || m.to === 'team';
 
 export class Mailbox {
+  updateAgent = updateAgent;
+  findAgents = findAgents;
+  checkTask = checkTask;
   createTask = createTask;
   listTasks = listTasks;
   getTask = getTask;
   updateTask = updateTask;
-  constructor(store, login, now = Date.now) { this.store = store; this.login = login; this.now = now; }
+  constructor(store, login, now = Date.now, readPolicy = async()=>null) { this.store = store; this.login = login; this.now = now; this.readPolicy = readPolicy; }
   actor(state, id) {
     const a = state.agents[id];
     if (!a || a.owner !== this.login) throw new Error('Agent identity does not belong to your authenticated GitHub account; call join_team');
@@ -46,7 +50,7 @@ export class Mailbox {
   }
   async status() {
     const {state} = await this.store.read();
-    return { agents:Object.values(state.agents).sort((a,b)=>b.seenAt-a.seenAt).slice(0,100),
+    return { agents:Object.values(state.agents).sort((a,b)=>b.seenAt-a.seenAt).slice(0,100).map(a=>({...a,profile:profileView(a,this.now())})),
       claims:state.claims.filter(c=>c.expiresAt>this.now()),
       note:'seenAt is last mailbox activity, not live agent status. Claims are advisory; no files are locked.' };
   }

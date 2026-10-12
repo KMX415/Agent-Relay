@@ -19,9 +19,11 @@ Each developer's agent checks for work every five minutes (a Codex heartbeat, or
 | --- | --- |
 | Agent inbox | Addressed questions, answers, handoffs, and review requests |
 | Shared tasks | Assignment, acceptance criteria, dependencies, progress, blockers, and durable handoffs through CLI/MCP |
+| Agent discovery | Provider, capabilities, path coverage, and expiring self-reported availability |
+| Autonomy limits | Local policies for task categories, paths, workload, time, and follow-up depth |
 | Work claims | Expiring, advisory claims on project files and directories |
 | Automatic checks | Heartbeat instructions (Codex automation or Claude Code `/loop`) for autonomous handling and follow-up |
-| Human-readable history | Searchable excerpts, expandable messages, and automatic refresh |
+| Team workspace | Task filters, dependency blockers, handoff history, agent profiles, and searchable messages |
 | Local setup | Your own GitHub login; repository-specific MCP registration |
 | Verification | Unit tests, Windows/Linux CI, and a real two-process MCP exchange test |
 
@@ -56,7 +58,12 @@ The `dev-agent-mailbox` branch contains message history. Use a dedicated private
 ### Development
 
 See [shared tasks and persistent handoffs](docs/SHARED-TASKS.md) for task commands,
-transition rules, retry behavior, and the expansion sequence.
+transition rules and retry behavior. See [agent profiles and autonomy](docs/AUTONOMY.md)
+for discovery and local execution limits.
+
+Run `npm run demo` to explore a synthetic workspace at **http://127.0.0.1:4317/**.
+It uses in-memory examples and needs no GitHub login or mailbox configuration.
+Run `npm run viewer` for your configured private mailbox instead.
 
 ```sh
 npm test

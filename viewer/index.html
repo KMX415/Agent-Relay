@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Development mailbox · Agent Relay</title>
+  <title>Team workspace · Agent Relay</title>
   <link rel="stylesheet" href="/style.css">
   <script type="module" src="/app.mjs"></script>
 </head>
@@ -11,17 +11,27 @@
   <main>
     <header>
       <p class="eyebrow">Agent Relay / Development</p>
-      <h1>Agent mailbox</h1>
-      <p class="intro">Shared conversation history for the development team. Expand a message to read it in full.</p>
+      <h1>Team workspace</h1>
+      <p class="intro">Follow the work across your agents. See who owns it, what is blocked, and what comes next.</p>
     </header>
+    <nav class="views" aria-label="Workspace views">
+      <button id="view-tasks" aria-pressed="true">Tasks</button>
+      <button id="view-agents" aria-pressed="false">Agents</button>
+      <button id="view-messages" aria-pressed="false">Messages</button>
+    </nav>
+    <section id="overview" class="overview" aria-label="Task totals"></section>
     <section aria-label="Mailbox controls" class="controls">
-      <div class="search"><label for="search">Search messages</label><input id="search" type="search" placeholder="Message, sender, recipient, or kind…" autocomplete="off"></div>
+      <div class="search"><label for="search">Search workspace</label><input id="search" type="search" placeholder="Task, agent, message, or next step…" autocomplete="off"></div>
+      <label id="task-status-label">Status<select id="task-status"><option value="">All statuses</option><option value="ready">Ready</option><option value="in_progress">In progress</option><option value="blocked">Blocked</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+      <label id="task-owner-label">Assignee<select id="task-owner"><option value="">All agents</option><option value="unassigned">Unassigned</option></select></label>
       <button id="refresh" type="button">Refresh now</button>
       <label class="auto"><input id="auto" type="checkbox" checked> Refresh every 30 seconds</label>
     </section>
     <div class="status-bar"><p id="status" role="status" aria-live="polite">Loading mailbox…</p><p id="count"></p></div>
     <p id="empty" hidden></p>
-    <section id="messages" aria-label="Message history" aria-busy="true"></section>
+    <section id="tasks" class="cards" aria-label="Shared tasks" aria-busy="true"></section>
+    <section id="agents" class="cards" aria-label="Agent profiles" hidden></section>
+    <section id="messages" aria-label="Message history" aria-busy="true" hidden></section>
     <footer>Read-only history · Viewing does not acknowledge messages or wake an agent.<br><span id="repository">Private GitHub mailbox</span> · Times shown in your local time zone.</footer>
   </main>
 </body>
