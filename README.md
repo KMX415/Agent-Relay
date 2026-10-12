@@ -111,7 +111,7 @@ npm ci
 npm run demo
 ```
 
-Open **http://127.0.0.1:4317/**. Explore Tasks, Agents, and Messages; expand a handoff or filter for blocked work. On Windows, use `npm.cmd` if PowerShell blocks `npm`.
+Open **http://127.0.0.1:4317/**. Explore Tasks, Agents, Skills, and Messages; inspect a skill's procedure, peer review, and reuse evidence, expand a handoff, or filter for blocked work. This optional demo shows the records agents manage through MCP or CLI. On Windows, use `npm.cmd` if PowerShell blocks `npm`.
 
 <details>
 <summary><strong>Manual setup for a real collaboration</strong></summary>
