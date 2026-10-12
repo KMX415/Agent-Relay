@@ -1,6 +1,7 @@
 import { eligibility, profileView, within } from './coordination.mjs';
 import { skillObservations } from './skill-improvement.mjs';
 import { skillDigest } from './skills.mjs';
+import { assertCollaborationTaskAction } from './collaboration.mjs';
 
 const active = task => ['ready','in_progress','blocked'].includes(task.status);
 
@@ -14,12 +15,37 @@ export async function nextActions({agent_id,after=0,limit=20}) {
   const check=(task,extra=[])=>{
     const result=eligibility(state,actor,task,policy,now);
     const reasons=[...result.reasons,...extra];
+    if (task.negotiationId) {
+      const source=tasks.find(t=>t.id===task.id)??task;
+      // Reviewer eligibility uses its own scope, while agreement checks retain
+      // the original negotiated terms and performer binding.
+      try { assertCollaborationTaskAction(state,source,state.agents[source.assigneeId]??actor,policy,now); }
+      catch(error) { reasons.push(error.message); }
+    }
     if (!policy) reasons.push(policyError?'Local autonomy policy cannot be read; repair it before autonomous work':'No local autonomy policy; establish authorized scope before autonomous work');
     return {...result,allowed:reasons.length===0,reasons};
   };
   const add=(priority,kind,id,reason,tool,args,fields={})=>entries.push({id:kind+':'+id,priority,kind,status:'actionable',reason,inspect:{tool,args:{agent_id,...args}},...fields});
   const work=(priority,kind,task,reason,decision,fields={})=>add(priority,kind,task.id,reason,'get_task',{task_id:task.id},
     {taskId:task.id,taskRevision:task.revision,status:decision.allowed?'actionable':'blocked',eligibility:decision,...fields});
+
+  for (const n of state.negotiations??[]) {
+    if (![n.requesterId,n.recipientId].includes(agent_id) || !['proposed','deferred'].includes(n.status)) continue;
+    const expired=now>=Date.parse(n.deadline), waiting=n.offeredBy===agent_id;
+    add(25,'negotiate_work',n.id,expired?'Negotiation deadline expired; inspect and resolve within user scope':waiting?'The peer owns the next response':'Inspect terms and contributor agreements; accept, counter, decline or defer within scope',
+      'get_negotiation',{negotiation_id:n.id},{status:expired?'blocked':waiting?'waiting':'actionable',negotiationRevision:n.revision,
+        limits:{round:n.round,maxRounds:n.maxRounds,deadline:n.deadline}});
+  }
+  for (const h of state.handoffs??[]) {
+    if (![h.senderId,h.recipientId].includes(agent_id)) continue;
+    const task=tasks.find(t=>t.id===h.taskId);
+    if (!task || !active(task)) continue;
+    const stale=task.revision!==h.taskRevision;
+    if (stale) continue;
+    const receiver=h.recipientId===agent_id;
+    add(26,'verify_handoff',h.id,receiver?'Inspect the immutable manifest and verify local artifacts before recording a receipt':'Inspect the recipient receipt before completing or transferring work',
+      'get_handoff',{handoff_id:h.id},{status:h.receipt?.verdict==='rejected'?'blocked':receiver?(h.receipt?'waiting':'actionable'):(h.receipt?'actionable':'waiting'),taskId:task.id,taskRevision:task.revision});
+  }
 
   for (const checkpoint of state.checkpoints??[]) {
     const task=tasks.find(t=>t.id===checkpoint.taskId);
@@ -53,7 +79,8 @@ export async function nextActions({agent_id,after=0,limit=20}) {
       const decision=check(task,cycle.round>=cycle.maxRounds?['Review round limit reached; explicit decision required']:[]);
       emit('revise_submission',stale?'Task changed since submission; inspect artifacts before resubmitting':'Inspect findings, fix within scope, then resubmit',decision.allowed?'actionable':'blocked',decision);
     } else if (cycle.phase==='approved') {
-      emit('verify_completion','Current task revision is approved; verify acceptance evidence before completing','actionable');
+      const decision=check(task);
+      emit('verify_completion','Current task revision is approved; verify acceptance evidence before completing',decision.allowed?'actionable':'blocked',decision);
     } else emit('await_review','The designated reviewer owns the next verdict','waiting');
   }
   for (const message of state.messages) {

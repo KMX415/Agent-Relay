@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { taskKinds, relativePath, eligibility } from './coordination.mjs';
 import { assertTaskReviewAction } from './review-cycles.mjs';
+import { assertCollaborationTaskAction } from './collaboration.mjs';
+import { assertVerifiedHandoff } from './handoffs.mjs';
 
 export const taskStatuses = ['ready', 'in_progress', 'blocked', 'completed', 'cancelled'];
 const text = (value, name, max = 4000) => {
@@ -66,14 +68,29 @@ export async function getTask({agent_id, task_id}) {
   return task;
 }
 
-export async function updateTask({agent_id, task_id, expected_revision, request_id, action, summary, assignee_id, artifacts = [], next_steps = []}) {
+export async function updateTask({agent_id, task_id, expected_revision, request_id, action, summary, assignee_id, artifacts = [], next_steps = [], handoff_id}) {
   request_id = text(request_id, 'request_id', 120); summary = text(summary, 'summary');
   artifacts = list(artifacts, 'artifacts'); next_steps = list(next_steps, 'next_steps');
   if (!['assign', 'accept', 'progress', 'block', 'resume', 'handoff', 'complete', 'cancel'].includes(action)) throw new Error('Invalid task action');
   if (!Number.isInteger(expected_revision) || expected_revision < 1) throw new Error('Invalid expected_revision');
   if (!['assign','handoff'].includes(action) && assignee_id !== undefined) throw new Error('Assignee only allowed for assign or handoff');
-  const fingerprint = JSON.stringify({expected_revision, action, summary, assignee_id, artifacts, next_steps});
-  const policy=['accept','resume','handoff'].includes(action)?await this.readPolicy():null;
+  if (handoff_id!==undefined) {
+    handoff_id=text(handoff_id,'handoff_id',150);
+    if (!['handoff','complete'].includes(action)) throw new Error('Handoff evidence only applies to handoff or complete');
+  }
+  const fingerprint = JSON.stringify({expected_revision, action, summary, assignee_id, artifacts, next_steps,...(handoff_id?{handoff_id}:{})});
+  let policy=null;
+  if (['accept','resume','handoff'].includes(action)) policy=await this.readPolicy();
+  else if (['progress','complete'].includes(action)) {
+    const {state}=await this.store.read();this.actor(state,agent_id);
+    const current=(state.tasks??[]).find(t=>t.id===task_id);
+    const old=current?.history.find(h=>h.actorId===agent_id && h.requestId===request_id);
+    if (old) {
+      if (old.fingerprint!==fingerprint) throw new Error('request_id already used for different content');
+      return current;
+    }
+    if (current?.negotiationId) policy=await this.readPolicy();
+  }
   return this.change(state => {
     const actor = this.actor(state, agent_id), tasks = records(state), task = tasks.find(t => t.id === task_id);
     if (!task) throw new Error('Task not found');
@@ -83,6 +100,7 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
       return task;
     }
     if (task.revision !== expected_revision) throw new Error('Task revision changed; read task before updating');
+    assertCollaborationTaskAction(state,task,actor,policy,this.now(),action);
     assertTaskReviewAction(state,task,action);
     if (['completed','cancelled'].includes(task.status)) throw new Error('Task is terminal');
     if (task.history.length >= 100) throw new Error('Task history full; archive deliberately before continuing');
@@ -97,7 +115,7 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
       if (!owner && !(action === 'accept' && task.assigneeId === null)) throw new Error('Only assigned agent can perform this action');
       const allowed = {accept:['ready'], progress:['in_progress','blocked'], block:['in_progress'], resume:['blocked'], handoff:['in_progress','blocked'], complete:['in_progress']};
       if (!allowed[action].includes(task.status)) throw new Error('Invalid task transition');
-      if (['accept','resume'].includes(action)) {
+      if (['accept','resume'].includes(action) || (task.negotiationId && ['progress','complete'].includes(action))) {
         const decision=eligibility(state,actor,task,policy,this.now());
         if (!decision.allowed) throw new Error(decision.reasons.join('; '));
       }
@@ -106,16 +124,20 @@ export async function updateTask({agent_id, task_id, expected_revision, request_
         if (policy && (task.handoffCount??0)+1>policy.max_handoffs) throw new Error('Handoff count exceeds policy; ask the user');
         known(state, assignee_id);
         if (assignee_id === agent_id || !next_steps.length) throw new Error('Handoff needs another agent and next steps');
+        if (handoff_id) assertVerifiedHandoff(state,task,agent_id,assignee_id,handoff_id);
         task.assigneeId = assignee_id; task.status = 'ready'; task.handoffCount=(task.handoffCount??0)+1;
       } else if (action === 'accept') { task.assigneeId = agent_id; task.status = 'in_progress'; task.startedAt??=this.now(); }
       else if (action === 'resume') task.status = 'in_progress';
       else if (action === 'block') task.status = 'blocked';
-      else if (action === 'complete') task.status = 'completed';
+      else if (action === 'complete') {
+        if (task.negotiationId || handoff_id) assertVerifiedHandoff(state,task,agent_id,task.createdBy,handoff_id);
+        task.status = 'completed';
+      }
     }
     if (['accept','assign','handoff','cancel','complete'].includes(action)) delete task.routing;
     const now = this.now(); task.revision++; task.updatedAt = now; actor.seenAt = now;
     task.history.push({revision:task.revision, actorId:agent_id, requestId:request_id, fingerprint,
-      action, summary, artifacts, nextSteps:next_steps, assigneeId:task.assigneeId, status:task.status, createdAt:now});
+      action, summary, artifacts, nextSteps:next_steps, assigneeId:task.assigneeId, status:task.status, createdAt:now,...(handoff_id?{handoffId:handoff_id}:{})});
     return task;
   });
 }

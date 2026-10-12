@@ -13,6 +13,17 @@ export function notificationEvents(state, agentId, now) {
     const sourceKey = `${kind}:${source}`;
     events.push({ id: digest({ agentId, sourceKey, episode }), kind, sourceKey, ...fields });
   };
+  for (const n of state.negotiations??[]) {
+    if (![n.requesterId,n.recipientId].includes(agentId)) continue;
+    const expired=['proposed','deferred'].includes(n.status) && now>=Date.parse(n.deadline);
+    if (expired || n.status==='declined' || n.status==='cancelled') {
+      add('negotiation_'+(expired?'expired':n.status),n.id,n.revision,{
+        priority:n.status==='cancelled'?'result':'decision',negotiationId:n.id,title:n.terms.title,
+        summary:expired?'Negotiation deadline expired; do not reset the work budget.':`Negotiation ${n.status}: ${n.history.at(-1)?.summary??''}`,
+        observedAt:expired?Date.parse(n.deadline):n.updatedAt
+      });
+    }
+  }
   for (const task of state.tasks ?? []) {
     if (!related(task, agentId)) continue;
     if (['completed', 'blocked'].includes(task.status)) {

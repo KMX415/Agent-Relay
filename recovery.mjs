@@ -53,6 +53,8 @@ export async function getRecovery({agent_id}) {
       (m.to===agent_id || m.to==='team' || m.to.toLowerCase()===actor.owner.toLowerCase()) && !m.acknowledgedBy.includes(agent_id)),
     pendingTasks:tasks.filter(t=>(t.createdBy===agent_id || t.routing?.requestedBy===agent_id) && t.status==='ready'),
     reviewCycles:(state.reviewCycles??[]).filter(c=>c.builderId===agent_id || c.reviewerId===agent_id),
+    negotiations:(state.negotiations??[]).filter(n=>[n.requesterId,n.recipientId].includes(agent_id) && ['proposed','deferred'].includes(n.status)),
+    handoffs:(state.handoffs??[]).filter(h=>[h.senderId,h.recipientId].includes(agent_id) && tasks.some(t=>t.id===h.taskId && active(t.status) && t.revision===h.taskRevision)),
     skillImprovements:(state.skillImprovements??[]).filter(p=>p.status==='proposed' &&
       (p.createdBy===agent_id || (state.skills??[]).some(s=>s.id===p.skillId && s.createdBy===agent_id))),
     note:'Read-only recovery snapshot. Recheck task eligibility, current user scope, claims and actual artifacts before continuing. Checkpoints do not execute steps or guarantee exactly-once external actions. Reading does not acknowledge messages.'

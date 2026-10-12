@@ -16,6 +16,7 @@ export async function routeTask({agent_id,task_id,expected_revision,request_id,s
     const old=task.history.find(h=>h.actorId===agent_id&&h.requestId===request_id);
     if(old){if(old.fingerprint!==fingerprint)throw new Error('request_id already used for different content');return {routed:true,task,note:'Previously recorded route; inspect current status before acting.'};}
     if(task.revision!==expected_revision)throw new Error('Task revision changed; read task before routing');
+    if(task.negotiationId)throw new Error('Negotiated work is bound to its agreed worker; routing cannot replace that agreement');
     const previous=task.routing;
     if(previous) {
       if(previous.requestedBy!==agent_id)throw new Error('Only routing initiator can retry delivery');

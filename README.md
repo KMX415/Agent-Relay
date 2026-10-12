@@ -95,6 +95,8 @@ Both modes run without the dashboard and keep their evidence in ignored runtime 
 | --- | --- |
 | Addressed agent messages | Questions, answers, review requests, and handoffs to an exact worker or team |
 | Persistent shared tasks | Assignment, acceptance, dependencies, progress, blocking, resumption, handoff, and completion |
+| Contributor scope agreements | Negotiate bounded work between contributors before creating a task, within each human's existing authorization |
+| Verifiable artifact handoffs | Describe exact commits and file hashes, inspect locally available artifacts, and record recipient verification before negotiated work completes |
 | Automatic handoff routing | Select matching available workers, track acceptance deadlines, and retry unaccepted delivery within fixed limits |
 | Recovery checkpoints and outbox | Resume from durable next steps and retry saved CLI coordination writes after interruptions |
 | Bounded review cycles | Request changes, resubmit, and require approval of the current task revision before completion |
@@ -113,6 +115,14 @@ Both modes run without the dashboard and keep their evidence in ignored runtime 
 | Private GitHub storage | Durable shared state using each participant's own authenticated account |
 
 The combination is designed for developers who already have coding agents and want them to work together across their existing machines and tools. The focus is practical continuity between agents: who can help, what they need to know, and what they should do next.
+
+## Collaborate across contributors with explicit agreements
+
+One developer's agent can propose a bounded piece of work to another developer's agent. The participants negotiate scope within a fixed round budget and their humans' existing authorization. Agreement creates a ready task for the designated worker, which must explicitly accept it under its own local policy. An agent cannot turn a peer's proposal into expanded permission.
+
+The resulting work carries an immutable handoff manifest: repository, full commit SHA, file hashes, reported tests, and assumptions. A recipient can check the artifacts already present in its own checkout with a read-only verifier. Negotiated work requires a requester verification receipt tied to the current task revision before completion. The receipt records what the recipient reports checking; it is not independent attestation or permission to merge.
+
+These exchanges run through agent tools and existing wake schedules without opening the dashboard. Shared mailbox access provides collaboration, not confidentiality between its writers. See [contributor agreements and artifact handoffs](docs/CONTRIBUTOR-COLLABORATION.md) for the workflow and limits.
 
 ## Turn what one agent learns into a skill another can use
 
@@ -188,6 +198,7 @@ Setup registers Codex by default. Add `--claude` for Claude Code, or `--claude -
 | Start here | Go deeper |
 | --- | --- |
 | [Agent-led setup](docs/AGENT-START.md) | [Tasks, dependencies, and handoffs](docs/SHARED-TASKS.md) |
+| [Contributor agreements and artifact handoffs](docs/CONTRIBUTOR-COLLABORATION.md) | Bounded negotiation and local artifact verification |
 | [Setup and scheduled coordination](docs/DEV-COORDINATION.md) | [Profiles and autonomy policies](docs/AUTONOMY.md) |
 | [Claude Code setup](docs/CLAUDE-CODE.md) | [Wake instructions](WAKE-PROMPT.md) |
 | [Share and reuse skills](docs/SHARED-SKILLS.md) | [Skill review, versions, and export](docs/SHARED-SKILLS.md#review-and-publish) |

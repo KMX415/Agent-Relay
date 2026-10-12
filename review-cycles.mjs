@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { boundedText, eligibility } from './coordination.mjs';
+import { assertCollaborationTaskAction } from './collaboration.mjs';
 
 export const reviewPhases = ['awaiting_review', 'changes_requested', 'approved', 'exhausted', 'cancelled'];
 const integer = (value, name, max = Number.MAX_SAFE_INTEGER) => {
@@ -18,6 +19,7 @@ const source = (state, cycle) => {
   return task;
 };
 const authorize = (state, actor, task, policy, now, review = false) => {
+  assertCollaborationTaskAction(state,task,review?(state.agents[task.assigneeId]??actor):actor,policy,now);
   const target=review?{...task,assigneeId:actor.id,kind:'review',requiredCapabilities:['review']}:task;
   const result=eligibility(state,actor,target,policy,now);
   if (!result.allowed) throw new Error(result.reasons.join('; '));

@@ -1,4 +1,6 @@
 import { nextActions } from './next-actions.mjs';
+import { setCollaborationAgreement, revokeCollaborationAgreement, listCollaborationAgreements, proposeNegotiation, advanceNegotiation, getNegotiation, listNegotiations } from './collaboration.mjs';
+import { createHandoff, getHandoff, listHandoffs, recordHandoffVerification } from './handoffs.mjs';
 import { listNotifications, acknowledgeNotification } from './notifications.mjs';
 import { randomUUID } from 'node:crypto';
 import { createTask, listTasks, getTask, updateTask } from './tasks.mjs';
@@ -21,6 +23,17 @@ const overlap = (a,b) => a === b || a.startsWith(b+'/') || b.startsWith(a+'/');
 const recipient = (m, a) => m.to === a.id || m.to.toLowerCase() === a.owner.toLowerCase() || m.to === 'team';
 
 export class Mailbox {
+  setCollaborationAgreement = setCollaborationAgreement;
+  revokeCollaborationAgreement = revokeCollaborationAgreement;
+  listCollaborationAgreements = listCollaborationAgreements;
+  proposeNegotiation = proposeNegotiation;
+  advanceNegotiation = advanceNegotiation;
+  getNegotiation = getNegotiation;
+  listNegotiations = listNegotiations;
+  createHandoff = createHandoff;
+  getHandoff = getHandoff;
+  listHandoffs = listHandoffs;
+  recordHandoffVerification = recordHandoffVerification;
   nextActions = nextActions;
   listNotifications = listNotifications;
   acknowledgeNotification = acknowledgeNotification;

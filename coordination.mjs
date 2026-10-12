@@ -95,5 +95,11 @@ export async function checkTask({agent_id, task_id}) {
   const policy=await this.readPolicy(), {state}=await this.store.read(), actor=this.actor(state,agent_id);
   const task=(state.tasks??[]).find(t=>t.id===task_id);
   if (!task) throw new Error('Task not found');
-  return eligibility(state,actor,task,policy,this.now());
+  const result=eligibility(state,actor,task,policy,this.now());
+  if (task.negotiationId) {
+    const {assertCollaborationTaskAction}=await import('./collaboration.mjs');
+    try { assertCollaborationTaskAction(state,task,actor,policy,this.now(),'accept'); }
+    catch(error) { result.reasons.push(error.message); result.allowed=false; }
+  }
+  return result;
 }
