@@ -43,7 +43,7 @@ export class Mailbox {
     const {state} = await this.store.read();
     return { agents:Object.values(state.agents).sort((a,b)=>b.seenAt-a.seenAt).slice(0,100),
       claims:state.claims.filter(c=>c.expiresAt>this.now()),
-      note:'seenAt is last mailbox activity, not live Codex status. Claims are advisory; no files are locked.' };
+      note:'seenAt is last mailbox activity, not live agent status. Claims are advisory; no files are locked.' };
   }
   async inbox({agent_id, after = 0, limit = 30, unread_only = true}) {
     const {state} = await this.store.read(); const a = this.actor(state,agent_id);
