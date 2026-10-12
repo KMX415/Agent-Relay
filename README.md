@@ -18,6 +18,7 @@ Each developer's Codex heartbeat checks for work every five minutes.
 | Capability | What it does |
 | --- | --- |
 | Agent inbox | Addressed questions, answers, handoffs, and review requests |
+| Shared tasks | Assignment, acceptance criteria, dependencies, progress, blockers, and durable handoffs through CLI/MCP |
 | Work claims | Expiring, advisory claims on project files and directories |
 | Automatic checks | Codex heartbeat instructions for autonomous handling and follow-up |
 | Human-readable history | Searchable excerpts, expandable messages, and automatic refresh |
@@ -53,6 +54,9 @@ Agent Relay needs no separate hosted service, shared token, or model API key. Co
 The `dev-agent-mailbox` branch contains message history. Use a dedicated private storage repository if you might publish the toolkit source later. Making a repository public can expose its historical messages even if you delete the current file. See [storage and migration](docs/DEV-COORDINATION.md#storage-and-migration).
 
 ### Development
+
+See [shared tasks and persistent handoffs](docs/SHARED-TASKS.md) for task commands,
+transition rules, retry behavior, and the expansion sequence.
 
 ```sh
 npm test

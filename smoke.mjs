@@ -1,5 +1,6 @@
 // Real MCP wire test with two separate server processes. Synthetic messages only.
 import assert from 'node:assert/strict';
+import { tools } from './tools.mjs';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -16,7 +17,7 @@ async function call(client,name,args={}){
 }
 try{
   const a=await connect('smoke-a'),b=await connect('smoke-b');
-  assert.equal((await a.listTools()).tools.length,7);
+  assert.deepEqual((await a.listTools()).tools.map(t=>t.name).sort(),tools.map(t=>t.name).sort());
   if(!process.argv.includes('--exchange')){
     await call(a,'team_status');console.log('MCP initialize/list/read passed. Use --exchange for a synthetic two-process conversation.');
   }else{
