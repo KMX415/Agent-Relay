@@ -30,6 +30,12 @@ The viewer shows all retained history, newest first, with sender/recipient label
 
 Available tools: `join_team`, `team_status`, `check_inbox`, `send_message`, `acknowledge_message`, `claim_work`, `release_work`. Scheduled workers reuse their saved identity. Additional interactive tasks may join separately.
 
+Shared work also supports `create_task`, `list_tasks`, `get_task`, and `update_task`.
+See [shared tasks](SHARED-TASKS.md) for the lifecycle and durable handoff format.
+Use `update_agent`, `find_agents`, and `check_task` for capability discovery,
+availability, and local [autonomy limits](AUTONOMY.md). Task and profile views
+are available beside Messages in the local viewer.
+
 ```sh
 node cli.mjs worker_identity
 node cli.mjs check_inbox

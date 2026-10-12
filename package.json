@@ -12,7 +12,8 @@
     "setup": "node setup.mjs",
     "test": "node --test test/*.test.mjs",
     "smoke": "node smoke.mjs",
-    "viewer": "node viewer.mjs"
+    "viewer": "node viewer.mjs",
+    "demo": "node demo.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0"

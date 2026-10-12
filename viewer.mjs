@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { GitHubStore } from './github.mjs';
+import { dashboard } from './dashboard.mjs';
 
 const DEFAULT_PORT = 4315;
 const DEFAULT_CACHE_MS = 15_000;
@@ -13,6 +14,7 @@ const ASSETS = new Map([
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
   ['/app.mjs', ['app.mjs', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
+  ['/dashboard.mjs', ['dashboard.mjs', 'text/javascript; charset=utf-8']],
 ]);
 
 const SECURITY_HEADERS = {
@@ -110,7 +112,7 @@ export function createViewer({
       try {
         const { state } = await store.read();
         const fetchedAt = now();
-        const value = publicHistory(store.repo ?? 'unknown', state, fetchedAt);
+        const value = {state,fetchedAt};
         cached = { value, expiresAt: fetchedAt + cacheMs };
         failedUntil = 0;
         return value;
@@ -158,9 +160,11 @@ export function createViewer({
       return;
     }
 
-    if (url.pathname === '/api/messages') {
+    if (url.pathname === '/api/messages' || url.pathname === '/api/dashboard') {
       try {
-        sendJson(response, 200, await history());
+        const {state,fetchedAt}=await history();
+        const project=url.pathname==='/api/messages'?publicHistory:dashboard;
+        sendJson(response, 200, project(store.repo ?? 'unknown',state,fetchedAt));
       } catch {
         sendJson(response, 503, unavailable());
       }

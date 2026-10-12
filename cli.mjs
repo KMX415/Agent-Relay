@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { GitHubStore } from './github.mjs';
 import { Mailbox } from './mailbox.mjs';
 import { call } from './tools.mjs';
+import { policyReader } from './coordination.mjs';
 
 export const workerPath=fileURLToPath(new URL('./runtime/mailbox-worker.json',import.meta.url));
 export async function worker(store,login) {
@@ -23,7 +24,7 @@ if(process.argv[1]===fileURLToPath(import.meta.url)) {
   try {
     const name=process.argv[2];
     const store=new GitHubStore(process.env.AGENT_MAILBOX_REPO),login=await store.verify();
-    const saved=await worker(store,login),mailbox=new Mailbox(store,login);
+    const saved=await worker(store,login),mailbox=new Mailbox(store,login,Date.now,policyReader(store.repo,login));
     let args={};
     if(process.argv[3]) {
       if(process.argv[3]!=='--input'||!process.argv[4]||process.argv.length!==5)throw new Error('Usage: node cli.mjs TOOL [--input JSON_FILE]');
@@ -31,7 +32,7 @@ if(process.argv[1]===fileURLToPath(import.meta.url)) {
     }
     if(name==='worker_identity')console.log(JSON.stringify(saved));
     else {
-      if(!['team_status','join_team'].includes(name))args.agent_id??=saved.agentId;
+      if(!['team_status','join_team','find_agents'].includes(name))args.agent_id??=saved.agentId;
       console.log(JSON.stringify(await call(mailbox,name,args),null,2));
     }
   }catch(error){console.error(error.message);process.exitCode=1;}
