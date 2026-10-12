@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { contractView } from './contracts.mjs';
 
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const active = task => ['ready', 'in_progress', 'blocked'].includes(task.status);
@@ -13,6 +14,12 @@ export function notificationEvents(state, agentId, now) {
     const sourceKey = `${kind}:${source}`;
     events.push({ id: digest({ agentId, sourceKey, episode }), kind, sourceKey, ...fields });
   };
+  for(const record of state.contracts??[]) {
+    if(!record.participants.includes(agentId))continue;
+    const c=contractView(record,now);
+    const condition=c.exhausted?'exhausted':c.status;
+    if(['agreed','declined','expired','exhausted'].includes(condition))add('contract_'+condition,c.id,{revision:c.revision,condition},{priority:condition==='agreed'?'result':'decision',contractId:c.id,title:'Interface contract',summary:condition==='agreed'?'Inspect the agreed digest and explicitly pin tasks before work.':'Inspect contract limits and resolve within authorized scope; do not create replacement work to reset limits.',observedAt:c.updatedAt});
+  }
   for(const goal of state.goals??[]) {
     if(!goal.participants.includes(agentId))continue;
     const expired=goal.status==='active'&&now>=Date.parse(goal.deadline);

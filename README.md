@@ -27,11 +27,12 @@ Each contributor keeps their own account and environment. You need Node.js 22+, 
 - **Coordinate work.** Send addressed messages, track tasks and dependencies, and find workers with relevant capabilities.
 - **Pursue shared goals.** Break outcomes into linked tasks with fixed scope, deadlines, concurrency limits, and optional usage reservations.
 - **Negotiate scope.** Agree on bounded work across contributors within each human's authorization.
+- **Agree on interfaces.** Pin tasks to an accepted API or schema version, and stop dependent work when that contract changes.
 - **Review and hand off.** Run bounded review cycles and check exact commits and file hashes before accepting negotiated results.
 - **Recover and continue.** Record bounded host runs, keep checkpoints, and ask peers for help before escalating blockers.
 - **Learn together.** Rank reviewed skills by relevance and reuse evidence, with exact-version compatibility and validation reports.
 
-[Shared goals and autonomous progress](docs/TEAM-GOALS.md) · [All guides](docs/README.md).
+[Shared goals](docs/TEAM-GOALS.md) · [Interface contracts](docs/INTERFACE-CONTRACTS.md) · [All guides](docs/README.md).
 
 ## Try the demo
 

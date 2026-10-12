@@ -1,4 +1,5 @@
 import { assertGoalTask, goalReasons } from './goals.mjs';
+import { contractTaskReasons } from './contracts.mjs';
 import { eligibility, profileView, within } from './coordination.mjs';
 import { assertTaskReviewAction } from './review-cycles.mjs';
 
@@ -37,7 +38,7 @@ export async function routeTask({agent_id,task_id,expected_revision,request_id,s
     const load=id=>(state.tasks??[]).filter(t=>t.id!==task.id&&t.assigneeId===id&&['ready','in_progress','blocked'].includes(t.status)).length;
     const candidates=Object.values(state.agents).filter(a=>{
       const p=profileView(a,now);
-      return goalReasons(state,{...task,assigneeId:a.id},a,now,{execution:false}).length===0 && a.id!==agent_id&&!attempted.includes(a.id)&&p.availability==='available'&&
+      return contractTaskReasons(state,{...task,assigneeId:a.id},a,now).length===0 && goalReasons(state,{...task,assigneeId:a.id},a,now,{execution:false}).length===0 && a.id!==agent_id&&!attempted.includes(a.id)&&p.availability==='available'&&
         (task.requiredCapabilities??[]).every(c=>p.capabilities.includes(c))&&task.paths.every(path=>p.paths.some(root=>within(path,root)));
     }).sort((a,b)=>load(a.id)-load(b.id)||a.id.localeCompare(b.id));
     if(!candidates.length)return {routed:false,reason:'No available matching worker; retry on a later wake',task};

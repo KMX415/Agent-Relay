@@ -1,10 +1,12 @@
 # Next autonomous collaboration features
 
-Status: proposed specification, not implemented. These additions build on existing goals, tasks, agreements, reviews, handoffs, recovery, and skills. They run through MCP/CLI and each host's existing wake schedule. No dashboard interaction is required.
+Status: interface contracts are implemented; integration verification and durable decision records remain proposed. These additions build on existing goals, tasks, agreements, reviews, handoffs, recovery, and skills. They run through MCP/CLI and each host's existing wake schedule. No dashboard interaction is required.
 
 The outcome is useful progress across separately authorized contributors: agents agree on interfaces, build independently, verify that their results work together, and resolve routine questions without humans carrying messages. One human using several providers benefits from the same workflow.
 
 ## 1. Shared interface contracts
+
+Implemented. See the [interface contract guide](INTERFACE-CONTRACTS.md) for tools, task pins, evidence, and continuation. The section below records the intended workflow; integration checks and durable decision records described later remain future work.
 
 **Problem:** two agents can finish their assigned tasks and still disagree about an API, schema, configuration format, or error behavior. File claims and task dependencies do not describe those expectations.
 
@@ -12,7 +14,7 @@ The outcome is useful progress across separately authorized contributors: agents
 
 ### Records and tools
 
-Proposed tools: `propose_contract`, `get_contract`, `list_contracts`, and `advance_contract`.
+Tools: `propose_contract`, `get_contract`, `list_contracts`, and `advance_contract`.
 
 A contract contains a stable `work_id`, optional goal ID, linked task IDs and revisions, exact participating workers, repository and paths, interface description, compatibility expectations, acceptance examples, deadline, and fixed revision budget. Keep examples declarative; shared content never becomes an executable command automatically.
 
@@ -25,7 +27,7 @@ An agreement requires every designated participant to accept the same version un
 - Tasks explicitly opting into a contract pin its ID and digest. Existing tasks retain their current behavior.
 - Acceptance and resumption require the pinned version to be agreed, current, and within scope. Superseding it blocks dependent execution until the participants accept the replacement and explicitly repin affected tasks with revision checks.
 - Finishing a task records implementation evidence against the pinned version. This does not prove compatibility by itself; integration verification supplies that evidence.
-- Counterproposals cannot broaden a goal or either human's scope. Exhausting the original deadline or revision budget produces one decision request, not a new negotiation loop.
+- Revisions cannot broaden a goal or either human's scope. Exhausting the original deadline or version budget surfaces a decision through existing notifications, not a new negotiation loop or a durable decision record.
 
 ### Acceptance tests
 
@@ -86,7 +88,7 @@ Verify an in-scope choice resolved agent-to-agent, an access expansion left bloc
 
 ## Shared implementation requirements
 
-All proposed writes use revision checks, stable request IDs, and the existing durable CLI outbox. Include paginated reads, `next_actions`, recovery, and meaningful notifications from the first release. Bound record counts, examples, responses, and evidence; check the serialized mailbox size before committing any transition. Full storage fails without partial effects or silent deletion.
+Contract writes use revision checks, stable request IDs, and the existing durable CLI outbox. The remaining proposals must do the same. Include paginated reads, `next_actions`, recovery, and meaningful notifications from the first release. Bound record counts, examples, responses, and evidence; check the serialized mailbox size before committing any transition. Full storage fails without partial effects or silent deletion.
 
 Keep old mailboxes and ordinary tasks compatible. Add optional collections with explicit schema validation. Enforce transitions in shared domain code used by both MCP and CLI. Update tool definitions, guides, README, and wake instructions in the same implementation change. Saved schedules still require deliberate prompt updates; toolkit changes do not activate them.
 
@@ -94,7 +96,7 @@ These remain cooperative controls among mailbox writers, not an isolation bounda
 
 ## Delivery order and evidence
 
-1. **Interface contracts:** implement records and gates, then a synthetic three-owner scenario. This gives parallel builders a shared target.
+1. **Interface contracts (implemented):** records and task gates give parallel builders a shared target. Synthetic validation does not establish independent human participation.
 2. **Integration verification:** add the exact-input evidence gate and an isolated fixture where individually passing contributions initially fail together.
 3. **Durable decisions:** consolidate contract and integration blockers, then verify authorized resolution and selective continuation.
 

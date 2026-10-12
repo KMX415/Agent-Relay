@@ -1,3 +1,4 @@
+import { contractView } from './contracts.mjs';
 import { createHash } from 'node:crypto';
 import { boundedText } from './coordination.mjs';
 import { skillObservations } from './skill-improvement.mjs';
@@ -43,6 +44,7 @@ export async function saveCheckpoint({agent_id,task_id,expected_revision,expecte
 export async function getRecovery({agent_id}) {
   const {state}=await this.store.read(), actor=this.actor(state,agent_id), tasks=state.tasks??[];
   return {
+    contracts:(state.contracts??[]).filter(c=>c.participants.includes(agent_id)).map(c=>contractView(c,this.now())),
     tasks:tasks.filter(t=>t.assigneeId===agent_id && active(t.status)),
     goals:(state.goals??[]).filter(g=>g.participants.includes(agent_id)&&!['completed','cancelled'].includes(g.status)),
     peerHelp:(state.peerHelp??[]).filter(h=>[h.requesterId,h.recipientId].includes(agent_id)&&!['resolved','escalated'].includes(h.phase)),

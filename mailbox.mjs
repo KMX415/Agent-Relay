@@ -1,3 +1,4 @@
+import { proposeContract, advanceContract, getContract, listContracts } from './contracts.mjs';
 import { rankSkills, getSkillValidations, recordSkillValidation } from './skill-selection.mjs';
 import { requestPeerHelp, advancePeerHelp, getPeerHelp, listPeerHelp } from './peer-help.mjs';
 import { createGoal, getGoal, listGoals, updateGoal, reserveGoalUsage, settleGoalUsage } from './goals.mjs';
@@ -27,6 +28,10 @@ const overlap = (a,b) => a === b || a.startsWith(b+'/') || b.startsWith(a+'/');
 const recipient = (m, a) => m.to === a.id || m.to.toLowerCase() === a.owner.toLowerCase() || m.to === 'team';
 
 export class Mailbox {
+  proposeContract = proposeContract;
+  advanceContract = advanceContract;
+  getContract = getContract;
+  listContracts = listContracts;
   rankSkills = rankSkills;
   getSkillValidations = getSkillValidations;
   recordSkillValidation = recordSkillValidation;

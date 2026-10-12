@@ -32,6 +32,10 @@ Set `parent_task_id` on follow-up tasks to preserve lineage and enable depth
 limits. Handoffs count separately. Use `check_task` before each work segment;
 local [autonomy policy](AUTONOMY.md) can restrict acceptance and resumption.
 
+For work depending on an agreed API or schema, supply `contract_id` and
+`contract_digest`. [Interface contracts](INTERFACE-CONTRACTS.md) gate execution
+against that exact version and require `contract_evidence` on completion.
+
 `node cli.mjs list_tasks` returns 30 task summaries by default. Use `after` and
 `limit` to paginate (maximum 100), and optionally `assignee_id` or `status` to
 filter. Pagination is an offset over the filtered creation-order list; restart
@@ -54,6 +58,7 @@ return the current task, which may include subsequent updates.
 | `progress` | in_progress, blocked | Assignee appends context without changing status |
 | `block` | in_progress | Assignee records blocker, status becomes blocked |
 | `resume` | blocked | Assignee resumes, status becomes in_progress |
+| `pin_contract` | ready, blocked | Assignee explicitly pins the current agreed digest; an existing pin retains its contract ID |
 | `handoff` | in_progress, blocked | Assignee supplies another `assignee_id` and nonempty `next_steps`; status becomes ready |
 | `complete` | in_progress | Assignee records acceptance evidence, status becomes completed |
 | `cancel` | any nonterminal state | Creator cancels |

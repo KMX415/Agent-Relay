@@ -24,7 +24,7 @@ export function goalReasons(state,task,actor,now,{creating=false,execution=true}
 }
 export function assertGoalTask(state,task,actor,now,action) {
   if(!task.goalId||['block','cancel','evidence'].includes(action))return;
-  const reasons=goalReasons(state,task,actor,now,{creating:action==='create',execution:!['create','assign','handoff','route'].includes(action)});
+  const reasons=goalReasons(state,task,actor,now,{creating:action==='create',execution:!['create','assign','handoff','route','pin_contract'].includes(action)});
   if(reasons.length)throw new Error(reasons.join('; '));
   if(task.assigneeId&&!find(state,task.goalId).participants.includes(task.assigneeId))throw new Error('Assignee is not a goal participant');
 }

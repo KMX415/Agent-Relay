@@ -4,6 +4,7 @@ import { skillDigest } from './skills.mjs';
 import { assertCollaborationTaskAction } from './collaboration.mjs';
 import { peerHelpView } from './peer-help.mjs';
 import { goalReasons } from './goals.mjs';
+import { contractView, contractTaskReasons } from './contracts.mjs';
 
 const active = task => ['ready','in_progress','blocked'].includes(task.status);
 
@@ -15,7 +16,7 @@ export async function nextActions({agent_id,after=0,limit=20}) {
   try { policy=await this.readPolicy(); } catch { policyError=true; }
   const tasks=state.tasks??[], cycles=state.reviewCycles??[], entries=[];
   const check=(task,extra=[],goalExecution=true)=>{
-    const result=eligibility(state,actor,task,policy,now,{goalExecution});
+    const result=eligibility(state,actor,task,policy,now,{goalExecution,contractSource:goalExecution?task:tasks.find(t=>t.id===task.id)??task});
     const reasons=[...result.reasons,...extra];
     if (task.negotiationId) {
       const source=tasks.find(t=>t.id===task.id)??task;
@@ -28,6 +29,16 @@ export async function nextActions({agent_id,after=0,limit=20}) {
     return {...result,allowed:reasons.length===0,reasons};
   };
   const add=(priority,kind,id,reason,tool,args,fields={})=>entries.push({id:kind+':'+id,priority,kind,status:'actionable',reason,inspect:{tool,args:{agent_id,...args}},...fields});
+  for(const record of state.contracts??[]) {
+    if(!record.participants.includes(agent_id))continue;
+    const c=contractView(record,now),v=c.versions.at(-1);
+    const changed=v.responses.some(r=>r.action==='request_changes');
+    const responded=v.responses.some(r=>r.actorId===agent_id);
+    const stopped=['expired','declined'].includes(c.status)||c.exhausted;
+    if(c.status==='agreed')continue;
+    add(24,'inspect_contract',c.id,stopped?'Contract needs a scoped decision; do not reset its deadline or version budget.':changed?'Inspect requested changes; only the proposer can create a successor.':'Inspect the exact interface digest before responding within your authorized scope.',
+      'get_contract',{contract_id:c.id},{status:stopped||!policy?'blocked':changed?(c.createdBy===agent_id?'actionable':'waiting'):responded?'waiting':'actionable',contractRevision:c.revision,digest:c.digest});
+  }
   for(const run of state.workerRuns??[]) {
     if(run.agentId!==agent_id || run.status!=='running' || now<run.leaseUntil)continue;
     add(5,'inspect_interrupted_run',run.id,'An earlier lease expired. Inspect actual effects, finalize its interrupted record, and reconcile outbox before continuing.','list_worker_runs',{}, {status:'blocked',runId:run.id});
@@ -126,7 +137,7 @@ export async function nextActions({agent_id,after=0,limit=20}) {
       if (cycle && ['awaiting_review','changes_requested'].includes(cycle.phase)) reasons.push('Cancel the active review before changing ownership');
       const candidate=Object.values(state.agents).some(a=>{
         const profile=profileView(a,now);
-        return goalReasons(state,{...task,assigneeId:a.id},a,now,{execution:false}).length===0 && a.id!==agent_id && !route.attempted.includes(a.id) && profile.availability==='available' &&
+        return contractTaskReasons(state,{...task,assigneeId:a.id},a,now).length===0 && goalReasons(state,{...task,assigneeId:a.id},a,now,{execution:false}).length===0 && a.id!==agent_id && !route.attempted.includes(a.id) && profile.availability==='available' &&
           (task.requiredCapabilities??[]).every(c=>profile.capabilities.includes(c)) && task.paths?.every(p=>profile.paths.some(root=>within(p,root)));
       });
       if (!candidate) reasons.push('No available matching worker');
