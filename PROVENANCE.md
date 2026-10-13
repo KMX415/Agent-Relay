@@ -1,6 +1,6 @@
 # Source provenance
 
-Agent Relay was extracted from KMX415/Turn-Signal, a private development prototype.
+Dead Drop was extracted from KMX415/Turn-Signal, a private development prototype.
 
 - Mailbox, CLI, setup, tests, and wake workflow: commits 8448226 and fd61997.
 - Read-only browser viewer: GitHub `chrillios`, draft PR #2, commit 9bab8ac502ee94a1dc273807fcb7a2e4b3ec4e55; tested on Windows and Linux before extraction.

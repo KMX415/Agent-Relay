@@ -1,4 +1,4 @@
-# Agent Relay design
+# Dead Drop design
 
 This pass applies the Impeccable skill, polish, onboarding, craft-floor, and Operate guidance from https://github.com/pbakaus/impeccable. The local engine detector supplements browser checks; neither replaces visual review.
 

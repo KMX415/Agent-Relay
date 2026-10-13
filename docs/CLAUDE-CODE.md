@@ -1,4 +1,4 @@
-# Using Agent Relay with Claude Code
+# Using Dead Drop with Claude Code
 
 Connect Claude Code to the shared mailbox, verify a peer exchange, then use
 Claude Code’s `/loop` for continued work in an open session. Messages, tasks,
@@ -13,17 +13,17 @@ For mailbox access, project scope, and coordination rules, start with
 ## 1. Setup
 
 ```sh
-git clone https://github.com/KMX415/Agent-Relay.git RELAY_ROOT
-cd RELAY_ROOT
+git clone https://github.com/KMX415/Dead-Drop.git DEAD_DROP_ROOT
+cd DEAD_DROP_ROOT
 npm ci
 gh auth login
 node setup.mjs --repo OWNER/PRIVATE-MAILBOX --claude --no-codex
 npm run smoke
 ```
 
-Replace `RELAY_ROOT` and `OWNER/PRIVATE-MAILBOX`. The designated owner adds
+Replace `DEAD_DROP_ROOT` and `OWNER/PRIVATE-MAILBOX`. The designated owner adds
 `--initialize` once; teammates omit it. The command above registers Claude Code
-only. Use a separate Relay checkout for each independent worker.
+only. Use a separate Dead Drop checkout for each independent worker.
 
 <details>
 <summary><strong>Other client registration options</strong></summary>
@@ -42,13 +42,13 @@ That still supplies only one saved CLI worker identity.
 
 Every form saves `runtime/config.json` and the stable worker identity in
 `runtime/mailbox-worker.json`. An existing registration that differs is never
-overwritten; setup stops and names it. Use one Agent Relay clone per agent
+overwritten; setup stops and names it. Use one Dead Drop clone per agent
 (see below).
 
 ## 2. Read the mailbox
 
 The CLI works from a Claude Code session with no registration and no restart.
-Run it from `RELAY_ROOT`:
+Run it from `DEAD_DROP_ROOT`:
 
 ```sh
 node cli.mjs worker_identity
@@ -79,7 +79,7 @@ Claude Code has no Codex automations, so `WAKE-PROMPT.md` is run on a timer
 inside an open Claude Code session with the built-in `/loop` command:
 
 1. Copy the text of [WAKE-PROMPT.md](../WAKE-PROMPT.md).
-2. Replace `RELAY_ROOT` and `PROJECT_ROOT` with absolute paths.
+2. Replace `DEAD_DROP_ROOT` and `PROJECT_ROOT` with absolute paths.
 3. In the session where work should continue, run:
 
    ```
@@ -107,7 +107,7 @@ observed. An open loop alone does not prove the other participant is running.
 ## 4. Project instructions: CLAUDE.md
 
 Codex reads `AGENTS.md`; Claude Code reads `CLAUDE.md`. In the *development
-project* (not the Agent Relay clone), keep one source of truth by importing
+project* (not the Dead Drop clone), keep one source of truth by importing
 the existing file from `CLAUDE.md`:
 
 ```markdown
@@ -119,13 +119,13 @@ the existing file from `CLAUDE.md`:
 Give this to Claude Code in the session where development should continue,
 after replacing the three placeholders:
 
-> Set up Agent Relay from RELAY_ROOT for development in PROJECT_ROOT, using
+> Set up Dead Drop from DEAD_DROP_ROOT for development in PROJECT_ROOT, using
 > private mailbox OWNER/PRIVATE-MAILBOX and my own GitHub account. Follow
-> Agent Relay's docs/DEV-COORDINATION.md and docs/CLAUDE-CODE.md. Install
+> Dead Drop's docs/DEV-COORDINATION.md and docs/CLAUDE-CODE.md. Install
 > dependencies and run `node setup.mjs --claude` (add `--no-codex` if this computer has no Codex), initialize storage only if I
 > am its designated owner, and verify `node cli.mjs team_status` works. Then
 > start a `/loop` on this session using the complete WAKE-PROMPT.md
-> instructions, with RELAY_ROOT and PROJECT_ROOT replaced by absolute paths.
+> instructions, with DEAD_DROP_ROOT and PROJECT_ROOT replaced by absolute paths.
 > This authorizes project-scoped agent messages, handling development
 > handoffs, relevant tests, feature branches and draft PRs; it does not
 > authorize main merges, deployments or unrelated work. Report whether the
@@ -142,5 +142,5 @@ Code sessions on one machine), note that:
   them apart.
 - A message addressed to a login reaches **every** worker under it. Address an
   exact worker ID (from `team_status`) when you mean one agent.
-- Use a separate Agent Relay clone per agent so each keeps its own stable
+- Use a separate Dead Drop clone per agent so each keeps its own stable
   identity and pending work.

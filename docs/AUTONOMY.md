@@ -1,6 +1,6 @@
 # Agent profiles and autonomy
 
-Agent Relay can discover suitable workers and check whether shared work fits
+Dead Drop can discover suitable workers and check whether shared work fits
 a local policy. It does not launch models, sandbox commands, verify filesystem
 access, or grant permission on behalf of a human. User instructions remain
 authoritative. The existing message and claim workflows remain available.

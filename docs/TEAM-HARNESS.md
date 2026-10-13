@@ -1,6 +1,6 @@
 # Team acceptance harness
 
-Relay's target is collaboration across people and agents without a human relaying
+Dead Drop's target is collaboration across people and agents without a human relaying
 every turn. Multiple sessions under one person's account do not establish that
 result. This harness tests contributor workflow boundaries before external
 testers are available, and preserves that distinction in its reports.
@@ -14,7 +14,7 @@ npm run test:team
 
 The default run creates six scripted workers, two for each of three synthetic
 contributors. Each has a saved identity, local policy, and workspace. All use the
-public Relay dispatcher against a local persisted compare-and-swap store. No
+public Dead Drop dispatcher against a local persisted compare-and-swap store. No
 configured GitHub mailbox, saved real worker, scheduler, or dashboard is used.
 At most three tool calls execute concurrently.
 

@@ -94,7 +94,7 @@ export function eligibility(state, actor, task, policy, now, {goalExecution=true
     if (task.startedAt!==undefined && now>=task.startedAt+policy.max_task_minutes*60000) reasons.push('Task time budget exhausted; record progress and escalate');
   }
   return {allowed:reasons.length===0,reasons,policyConfigured:!!policy,
-    note:policy?'Relay scope checks do not sandbox execution. Recheck before each work segment.':'No local autonomy policy. Existing user authorization is still required.'};
+    note:policy?'Dead Drop scope checks do not sandbox execution. Recheck before each work segment.':'No local autonomy policy. Existing user authorization is still required.'};
 }
 export async function checkTask({agent_id, task_id}) {
   const policy=await this.readPolicy(), {state}=await this.store.read(), actor=this.actor(state,agent_id);

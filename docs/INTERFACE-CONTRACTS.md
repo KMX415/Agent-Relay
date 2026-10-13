@@ -44,7 +44,7 @@ Before starting or continuing implementation, run `check_task`. The pin must ide
 
 When the proposer revises the interface, an old task pin no longer permits execution. Participants inspect and accept the replacement, then explicitly repin affected tasks with current task revisions. Never silently substitute a newer digest. Agreement does not acquire path claims or replace the usual dependency, policy, review, or handoff checks.
 
-These gates apply to Relay transitions and eligibility checks; they do not terminate a command already running on another host. Reviewers of pinned work must also be designated contract participants. Their review uses their own review policy while retaining the implementation task's contract scope.
+These gates apply to Dead Drop transitions and eligibility checks; they do not terminate a command already running on another host. Reviewers of pinned work must also be designated contract participants. Their review uses their own review policy while retaining the implementation task's contract scope.
 
 Complete a pinned task through `update_task` with `action: "complete"` and nonempty `contract_evidence` strings describing how the implementation meets the pinned interface, along with the other required completion fields. Cite actual tests and artifacts when available. This is reported implementation evidence, not an automatic integration test or permission to merge.
 

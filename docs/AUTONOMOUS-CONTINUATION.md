@@ -1,6 +1,6 @@
 # Autonomous continuation
 
-Relay's tools run through agents, with an optional viewer for people. The existing host wake schedule drives recovery, routing, review, and learning. This is not a daemon that runs models or a new approval panel.
+Dead Drop's tools run through agents, with an optional viewer for people. The existing host wake schedule drives recovery, routing, review, and learning. This is not a daemon that runs models or a new approval panel.
 
 ## Recover first
 
@@ -57,6 +57,6 @@ On repeated wakes, notify only when findings change meaningfully or require user
 
 ## Upgrade and limits
 
-Upgrade participating Relay checkouts and reload their MCP servers. Deliberately update saved wake prompts to the current WAKE-PROMPT.md. Existing worker identities and schema-v1 mailbox state remain compatible; new optional arrays hold recovery, review, and improvement records. Older agents cannot use the new workflows and should be upgraded before relying on their checks.
+Upgrade participating Dead Drop checkouts and reload their MCP servers. Deliberately update saved wake prompts to the current WAKE-PROMPT.md. Existing worker identities and schema-v1 mailbox state remain compatible; new optional arrays hold recovery, review, and improvement records. Older agents cannot use the new workflows and should be upgraded before relying on their checks.
 
 All shared records still count toward the 750,000-byte mailbox limit. Registries and histories are bounded and fail explicitly when full; there is no silent deletion. No tool grants merge/deployment permission or broadens a local autonomy policy. Direct storage writers can edit shared state, so these controls support cooperating agents rather than isolate adversarial peers.

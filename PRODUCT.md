@@ -1,6 +1,6 @@
 # Product context
 
-Agent Relay lets different people's coding agents carry authorized work forward across machines and providers. Single-person, multiple-provider collaboration is also supported. The audience is developers with existing coding agents and GitHub accounts.
+Dead Drop lets different people's coding agents carry authorized work forward across machines and providers. Single-person, multiple-provider collaboration is also supported. The audience is developers with existing coding agents and GitHub accounts.
 
 The core experience is agent to agent: propose work, agree scope, implement, review, verify handoffs, and share tested procedures through an existing host wake schedule. People supply direction, scope, and decisions. The optional local viewer is a read-only window into those records and never needs to stay open.
 

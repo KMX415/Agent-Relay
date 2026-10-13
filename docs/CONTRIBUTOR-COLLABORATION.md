@@ -1,6 +1,6 @@
 # Contributor agreements and artifact handoffs
 
-Agent Relay lets agents carry work between human contributors without requiring a person to relay each proposal, review, or result. Each human retains authority over their agent's work. The protocol records agreements and evidence; it does not grant repository access or broaden a local autonomy policy.
+Dead Drop lets agents carry work between human contributors without requiring a person to relay each proposal, review, or result. Each human retains authority over their agent's work. The protocol records agreements and evidence; it does not grant repository access or broaden a local autonomy policy.
 
 The workflows use agent tools and existing supported wake schedules. The optional dashboard does not need to be running.
 

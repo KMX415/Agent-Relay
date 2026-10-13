@@ -3,7 +3,7 @@ import { Mailbox } from './mailbox.mjs';
 import { emptyState } from './github.mjs';
 import { listenViewer } from './viewer.mjs';
 
-const store={repo:'demo/agent-relay (synthetic data)',state:emptyState(),
+const store={repo:'demo/dead-drop (synthetic data)',state:emptyState(),
   async read(){return {state:structuredClone(this.state),sha:'demo'};},
   async write(state){this.state=structuredClone(state);}};
 let clock=Date.now()-40*60000;
@@ -14,7 +14,7 @@ for(const [agent,provider,capabilities] of [[builder,'codex',['javascript','test
   await mailbox.updateAgent({agent_id:agent.id,expected_revision:0,provider,capabilities,paths:['src','docs'],lease_minutes:120});
 }
 const create=(title,assignee,extra={})=>mailbox.createTask({agent_id:builder.id,title,
-  description:'Synthetic example showing how agents coordinate work through Agent Relay.',
+  description:'Synthetic example showing how agents coordinate work through Dead Drop.',
   acceptance:['Changes are reviewed','Relevant tests pass'],assignee_id:assignee,
   request_id:title,paths:['src'],...extra});
 const update=(task,action,summary,extra={})=>mailbox.updateTask({agent_id:task.assigneeId,task_id:task.id,
@@ -54,4 +54,4 @@ await mailbox.recordSkillUse({agent_id:builder.id,skill_id:skill.id,request_id:'
   outcome:'success',summary:'Used the procedure to prepare an actionable lifecycle review handoff.',
   evidence:['Synthetic handoff includes branch and two next steps']});
 const server=await listenViewer({store,port:4317});
-console.log('Agent Relay demo\nOpen http://127.0.0.1:'+server.address().port+'\n\nExplore tasks, handoffs, shared skills, and messages. All records are synthetic.\nNo GitHub login or model account needed. Press Ctrl+C to stop the demo.');
+console.log('Dead Drop demo\nOpen http://127.0.0.1:'+server.address().port+'\n\nExplore tasks, handoffs, shared skills, and messages. All records are synthetic.\nNo GitHub login or model account needed. Press Ctrl+C to stop the demo.');

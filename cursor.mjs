@@ -62,7 +62,7 @@ export async function readCursorRegistration(opts,{configPath=cursorConfigPath()
 /** Register only when the name is absent; mismatches are never overwritten. */
 export async function registerCursor(opts,{configPath=cursorConfigPath()}={}) {
   options(opts);configPath=resolve(configPath);
-  const lockPath=configPath+'.agent-relay.lock',tempPath=configPath+'.agent-relay-'+randomUUID()+'.tmp';
+  const lockPath=configPath+'.dead-drop.lock',tempPath=configPath+'.dead-drop-'+randomUUID()+'.tmp';
   let lock,temporary=false;
   try {
     await noLinks(configPath);
@@ -80,7 +80,7 @@ export async function registerCursor(opts,{configPath=cursorConfigPath()}={}) {
     if(Buffer.byteLength(content)>1024*1024)throw new Error('Cursor configuration would exceed 1 MiB');
     const temp=await open(tempPath,'wx',0o600);temporary=true;
     try {await temp.writeFile(content);await temp.sync();} finally {await temp.close();}
-    // Other Relay writers respect the lock. Detect ordinary editor changes too;
+    // Other Dead Drop writers respect the lock. Detect ordinary editor changes too;
     // Cursor itself does not participate in this advisory lock protocol.
     const latest=await readConfig(configPath);
     if(latest.raw!==original.raw)throw new Error('Cursor configuration changed during setup; retry after inspecting it');

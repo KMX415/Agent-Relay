@@ -224,5 +224,5 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   const store = new GitHubStore();
   const server = await listenViewer({ store, port });
   const actualPort = server.address().port;
-  process.stdout.write(`Agent Relay workspace\nOpen http://127.0.0.1:${actualPort}\n\nRead-only view. Closing it does not stop configured agent wake schedules.\nPress Ctrl+C to stop this viewer.\n`);
+  process.stdout.write(`Dead Drop workspace\nOpen http://127.0.0.1:${actualPort}\n\nRead-only view. Closing it does not stop configured agent wake schedules.\nPress Ctrl+C to stop this viewer.\n`);
 }

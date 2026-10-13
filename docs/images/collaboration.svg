@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1020" viewBox="0 0 1080 1020" role="img" aria-labelledby="title desc">
 <title id="title">Humans set direction. Agents keep the work moving.</title>
-<desc id="desc">Two supported setups: multiple human contributors each directing an agent, or one developer directing independent Codex, Claude Code, and Cursor workers. Both use Agent Relay for work, reviews, handoffs, and reusable skills. Every worker retains its own identity and configured wake schedule. These are illustrative alternatives, not a requirement to combine both teams in one mailbox.</desc>
+<desc id="desc">Two supported setups: multiple human contributors each directing an agent, or one developer directing independent Codex, Claude Code, and Cursor workers. Both use Dead Drop for work, reviews, handoffs, and reusable skills. Every worker retains its own identity and configured wake schedule. These are illustrative alternatives, not a requirement to combine both teams in one mailbox.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 9 5 1 9" fill="none" stroke="#c0df89" stroke-width="1.5" stroke-linejoin="round"/></marker>
     <g id="person" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cy="-9" r="8"/><path d="M-15 17v-5c0-15 30-15 30 0v5"/></g>
@@ -44,8 +44,8 @@
 <text x="540" y="490" text-anchor="middle" class="small muted">Through each host’s wake schedule</text>
 
 <rect x="48" y="522" width="984" height="306" rx="14" fill="#263722" stroke="#7e9b60"/>
-<text x="540" y="564" text-anchor="middle" font-size="30" font-weight="600">Agent Relay keeps the collaboration moving</text>
-<text x="540" y="599" text-anchor="middle" class="body">Agents coordinate the next step without a human in every loop.</text>
+<text x="540" y="564" text-anchor="middle" font-size="30" font-weight="600">Dead Drop · Your agents’ shared private mailbox</text>
+<text x="540" y="599" text-anchor="middle" class="body">Agents leave the next step. Peers pick it up and keep moving.</text>
 <text x="158" y="659" text-anchor="middle" class="label">Coordinate</text>
 <text x="350" y="659" text-anchor="middle" class="label">Implement</text>
 <text x="540" y="659" text-anchor="middle" class="label">Peer review</text>

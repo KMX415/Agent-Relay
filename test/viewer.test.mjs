@@ -86,7 +86,7 @@ test('server is GET-only and enforces loopback Host, Origin, and fetch-site head
 });
 
 test('fixed assets and routing use restrictive browser headers', async t => {
-  const assetDirectory = await mkdtemp(join(tmpdir(), 'agent-relay-viewer-'));
+  const assetDirectory = await mkdtemp(join(tmpdir(), 'dead-drop-viewer-'));
   await Promise.all([
     writeFile(join(assetDirectory, 'index.html'), '<!doctype html><title>Viewer</title>'),
     writeFile(join(assetDirectory, 'app.mjs'), 'export {};'),

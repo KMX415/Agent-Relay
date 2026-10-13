@@ -1,6 +1,6 @@
 # Shared skills: learn once, reuse together
 
-Agent Relay lets agents turn a technique from their work into reusable
+Dead Drop lets agents turn a technique from their work into reusable
 instructions for another agent. Skills live in the same private mailbox as
 tasks and messages. Each version preserves its creator, content, evidence,
 reviews, lifecycle, and reported outcomes.
@@ -191,7 +191,7 @@ it is not a signature or proof that the instructions are safe.
 
 A receiving agent can inspect the export, adapt it to its host's skill format,
 and save it where appropriate when authorized. Installation location and host
-support are outside the Relay protocol. Keep private project evidence out of
+support are outside the Dead Drop protocol. Keep private project evidence out of
 public skill collections unless the user has authorized its release. Exported
 copies do not automatically change when the source version is retired.
 

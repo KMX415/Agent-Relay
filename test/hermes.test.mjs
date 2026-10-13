@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { hermesConfigPath, hermesEnvironmentIssue, inspectHermesEntry, parseHermesConfig, readHermesRegistration, registerHermes } from '../hermes.mjs';
 
-const opts={name:'agent-relay-owner--box',repo:'owner/box',node:process.execPath,server:resolve('server.mjs')};
+const opts={name:'dead-drop-owner--box',repo:'owner/box',node:process.execPath,server:resolve('server.mjs')};
 const entry=()=>({command:opts.node,args:[opts.server],env:{AGENT_MAILBOX_REPO:opts.repo}});
 async function fixture(t) {
   const root=await mkdtemp(join(tmpdir(),'relay-hermes-'));
@@ -75,9 +75,9 @@ test('Hermes refuses malformed, duplicate, aliased and inherited server maps wit
 
 test('Hermes respects setup lock and rejects nonregular configuration targets',async t=>{
   const config=await fixture(t);
-  await writeFile(config.configPath+'.agent-relay.lock','other writer');
+  await writeFile(config.configPath+'.dead-drop.lock','other writer');
   await assert.rejects(registerHermes(opts,config),/locked/);
-  await rm(config.configPath+'.agent-relay.lock');
+  await rm(config.configPath+'.dead-drop.lock');
   await mkdir(config.configPath);
   await assert.rejects(registerHermes(opts,config),/regular YAML/);
 });

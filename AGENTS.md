@@ -1,4 +1,4 @@
-# Agent Relay development
+# Dead Drop development
 
 Read README.md and docs/DEV-COORDINATION.md. Run npm test for code changes. Keep toolkit files separate from message storage and project work.
 

@@ -78,7 +78,7 @@ export async function recordHandoffVerification({agent_id,handoff_id,expected_ta
     currentTask(state,h);
     if(expected_task_revision!==h.taskRevision||manifest_digest!==h.digest)throw new Error('Verification must match exact manifest and source task revision');
     if(verdict==='accepted'&&(payload.observedRepository!==h.repository||payload.observedCommit!==h.commitSha||payload.observedArtifacts.length!==h.artifacts.length||h.artifacts.some(a=>!payload.observedArtifacts.some(b=>b.path===a.path&&b.sha256===a.sha256&&b.clean))))throw new Error('Accepted verification requires matching repository, commit and clean artifact digests');
-    h.receipt={...payload,actorId:agent_id,createdAt:this.now(),requestId:request_id,fingerprint,note:'Recipient-reported observations. Relay does not attest the host or execute test evidence.'};actor.seenAt=this.now();return h;
+    h.receipt={...payload,actorId:agent_id,createdAt:this.now(),requestId:request_id,fingerprint,note:'Recipient-reported observations. Dead Drop does not attest the host or execute test evidence.'};actor.seenAt=this.now();return h;
   });
 }
 export function assertVerifiedHandoff(state,task,senderId,recipientId,handoffId) {

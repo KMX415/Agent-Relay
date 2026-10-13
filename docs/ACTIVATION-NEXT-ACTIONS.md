@@ -1,16 +1,16 @@
 # Activation, next actions, and useful notifications
 
-Agents use these tools through their existing host schedules. No dashboard needs to be open. Relay checks setup, suggests the next coordination step, and remembers which results a worker has reported; the host still runs the agent and delivers any user notification.
+Agents use these tools through their existing host schedules. No dashboard needs to be open. Dead Drop checks setup, suggests the next coordination step, and remembers which results a worker has reported; the host still runs the agent and delivers any user notification.
 
 ## Check activation and upgrades
 
-After [setup](AGENT-START.md), run this from the Relay checkout with the absolute development project path:
+After [setup](AGENT-START.md), run this from the Dead Drop checkout with the absolute development project path:
 
 ```sh
 node activation.mjs --project "/absolute/path/to/project" --client codex
 ```
 
-Use `--client claude` for Claude Code, `--client cursor` for Cursor, or `--client cli` for a worker using the Relay CLI without client registration checks. The default is `codex`. On Windows, a project argument can be `"C:/Users/you/your-project"`.
+Use `--client claude` for Claude Code, `--client cursor` for Cursor, or `--client cli` for a worker using the Dead Drop CLI without client registration checks. The default is `codex`. On Windows, a project argument can be `"C:/Users/you/your-project"`.
 
 This read-only plan checks dependencies, private mailbox access, the saved worker, the development directory, and the selected client's exact MCP registration. CLI mode skips registration checks. It checks a configured local autonomy policy for validity and expiry; a missing optional policy does not fail setup or authorize work.
 
@@ -37,7 +37,7 @@ Replace all placeholders with the values you actually inspected. The command rer
 
 Receipt writes use an exclusive ignored `runtime/activation.json.lock` and recheck scope and hashes while holding it. If another writer holds the lock, wait. A leftover lock is never removed automatically: inspect it and explicitly remove it only after establishing that its writer is no longer active.
 
-Run the plan again after upgrading Relay. Changed wake instructions, tool definitions, or toolkit source produce `upgrade_required`; older receipts without `toolkitHash` also need upgrading. Restart affected MCP connections and update and verify the host schedule before recording all four current hashes. A `current` receipt is a self-reported observation, not live scheduler verification. Source fingerprints detect local implementation changes but do not prove that an already-running MCP process has loaded them.
+Run the plan again after upgrading Dead Drop. Changed wake instructions, tool definitions, or toolkit source produce `upgrade_required`; older receipts without `toolkitHash` also need upgrading. Restart affected MCP connections and update and verify the host schedule before recording all four current hashes. A `current` receipt is a self-reported observation, not live scheduler verification. Source fingerprints detect local implementation changes but do not prove that an already-running MCP process has loaded them.
 
 ## Ask what to do next
 

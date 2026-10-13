@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { registerCursor,readCursorRegistration,inspectCursorEntry } from '../cursor.mjs';
 import { register,CLIENTS } from '../register.mjs';
 
-const opts={name:'agent-relay-owner--box',repo:'owner/box',node:'C:\\Node\\node.exe',server:'C:\\Agent Relay\\server.mjs'};
+const opts={name:'dead-drop-owner--box',repo:'owner/box',node:'C:\\Node\\node.exe',server:'C:\\Dead Drop\\server.mjs'};
 const entry=()=>({type:'stdio',command:opts.node,args:[opts.server],env:{AGENT_MAILBOX_REPO:opts.repo}});
 async function fixture(t) {
   const directory=await mkdtemp(join(tmpdir(),'relay-cursor-'));
@@ -27,7 +27,7 @@ test('Cursor registration preserves other servers and top-level fields without l
   const before=await readFile(configPath,'utf8');
   assert.equal((await registerCursor(opts,{configPath})).status,'matches');
   assert.equal(await readFile(configPath,'utf8'),before);
-  await assert.rejects(lstat(configPath+'.agent-relay.lock'),e=>e.code==='ENOENT');
+  await assert.rejects(lstat(configPath+'.dead-drop.lock'),e=>e.code==='ENOENT');
 });
 
 test('Cursor exact registration rejects executable, extra args, mailbox prefix and disabled entries',async t=>{
@@ -80,17 +80,17 @@ test('Cursor reader is read-only and malformed or nonobject JSON is never overwr
 test('Cursor lock prevents concurrent mutation and is not removed by nonowner',async t=>{
   const {configPath}=await fixture(t);
   await save(configPath,{});
-  const lockPath=configPath+'.agent-relay.lock';
+  const lockPath=configPath+'.dead-drop.lock';
   await writeFile(lockPath,'existing writer');
   await assert.rejects(registerCursor(opts,{configPath}),/locked/);
   assert.equal(await readFile(lockPath,'utf8'),'existing writer');
   assert.deepEqual(JSON.parse(await readFile(configPath,'utf8')),{});
   await rm(lockPath);
-  const results=await Promise.allSettled([registerCursor(opts,{configPath}),registerCursor({...opts,name:'agent-relay-second--box',repo:'second/box'},{configPath})]);
+  const results=await Promise.allSettled([registerCursor(opts,{configPath}),registerCursor({...opts,name:'dead-drop-second--box',repo:'second/box'},{configPath})]);
   assert.ok(results.some(r=>r.status==='fulfilled'));
   for(const r of results)if(r.status==='rejected')assert.match(r.reason.message,/locked/);
   // Retrying the competing writer preserves the first entry.
-  await registerCursor(opts,{configPath});await registerCursor({...opts,name:'agent-relay-second--box',repo:'second/box'},{configPath});
+  await registerCursor(opts,{configPath});await registerCursor({...opts,name:'dead-drop-second--box',repo:'second/box'},{configPath});
   assert.equal(Object.keys(JSON.parse(await readFile(configPath,'utf8')).mcpServers).length,2);
 });
 

@@ -52,7 +52,7 @@ export async function runIntegration({projectRoot,manifest,profilePath,outputRoo
   const env={...Object.fromEntries(Object.entries(process.env).filter(([key])=>!key.toUpperCase().startsWith('GIT_'))),GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',GIT_TERMINAL_PROMPT:'0'};
   let hooks=resolve(output,'disabled-hooks');
   const git=async(args,cwd=root)=>{
-    const result=await execute('git',['--no-optional-locks','-c',`safe.directory=${root}`,'-c',`safe.directory=${cwd}`,'-c','core.fsmonitor=false','-c',`core.hooksPath=${hooks}`,'-c','commit.gpgSign=false','-c','merge.gpgSign=false','-c','user.name=Agent Relay Integration','-c','user.email=integration@agent-relay.invalid',...args],cwd,Math.min(30000,remaining()),env,2*1024*1024);
+    const result=await execute('git',['--no-optional-locks','-c',`safe.directory=${root}`,'-c',`safe.directory=${cwd}`,'-c','core.fsmonitor=false','-c',`core.hooksPath=${hooks}`,'-c','commit.gpgSign=false','-c','merge.gpgSign=false','-c','user.name=Dead Drop Integration','-c','user.email=integration@dead-drop.invalid',...args],cwd,Math.min(30000,remaining()),env,2*1024*1024);
     if(result.overflow)throw new Error('Git inspection exceeds bounded output');if(!result.passed)throw new Error(result.evidence||'Git command failed');return result.evidence.trim();
   };
   if(await realpath(await git(['rev-parse','--show-toplevel']))!==root)throw new Error('Project must be the repository root');

@@ -6,7 +6,7 @@ import { registerCursor } from './cursor.mjs';
 export const CLIENTS = ['codex', 'claude', 'cursor', 'hermes'];
 
 export function serverName(repo) {
-  return 'agent-relay-' + repo.toLowerCase().replace('/', '--');
+  return 'dead-drop-' + repo.toLowerCase().replace('/', '--');
 }
 
 // Codex: `codex mcp list --json` gives structured entries, so a mismatch is detected exactly.

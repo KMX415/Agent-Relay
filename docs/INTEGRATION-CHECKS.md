@@ -50,7 +50,7 @@ The worktree is not a security sandbox. Tests execute contribution code with the
 
 Acquire a bounded `begin_worker_run` lease for the exact verifier, using honest interactive or scheduled evidence. Then call `advance_integration_check` with `action: "start"`, `integration_id`, `expected_revision`, current `input_digest`, `run_id`, `summary`, and stable `request_id`. Start rechecks current source records and execution scope. Save the returned `execution` object, containing `{manifest, run}`, as the runner input.
 
-From the Relay checkout:
+From the Dead Drop checkout:
 
 ```sh
 node integration-run.mjs --project "ABSOLUTE-PROJECT-PATH" --input runtime/integration-execution.json --profile "ABSOLUTE-PROFILE-PATH" --output "ABSOLUTE-PROJECT-PATH/runtime/integration"
@@ -86,4 +86,4 @@ Discover checks through `next_actions`, `get_recovery`, and paginated reads. Use
 
 For a choice that prevents further authorized work, use [durable decisions](DECISIONS.md) with exact task context and only the affected tasks you own. A decision does not reset integration attempts, replace failed evidence, or authorize commands, merges, or deployment.
 
-Upgrade participating workers and deliberately update saved [wake instructions](../WAKE-PROMPT.md) before relying on these gates. Installing Relay does not update schedules.
+Upgrade participating workers and deliberately update saved [wake instructions](../WAKE-PROMPT.md) before relying on these gates. Installing Dead Drop does not update schedules.

@@ -1,6 +1,6 @@
-# Contributing to Agent Relay
+# Contributing to Dead Drop
 
-By intentionally submitting a contribution for inclusion in Agent Relay, you
+By intentionally submitting a contribution for inclusion in Dead Drop, you
 agree to license it under the GNU Affero General Public License, version 3 only
 (`AGPL-3.0-only`), as provided in [LICENSE](LICENSE). You retain your copyright;
 this is not a copyright assignment or a grant of alternative licensing rights.

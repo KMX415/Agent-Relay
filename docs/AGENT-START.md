@@ -1,6 +1,6 @@
 # Agent-led setup
 
-This is the entry point for a coding agent whose user has asked to connect Agent Relay. Carry out setup on the current host, explain interactive steps, and verify each layer. Merely reading this repository does not authorize installation, collaboration, or scheduled work.
+This is the entry point for a coding agent whose user has asked to connect Dead Drop. Carry out setup on the current host, explain interactive steps, and verify each layer. Merely reading this repository does not authorize installation, collaboration, or scheduled work.
 
 **First success:** one addressed question reaches the intended peer and its answer comes back. **Background success:** that exchange continues on a verified host schedule, within each human’s authorized scope. Track those outcomes separately. Neither requires the dashboard.
 
@@ -8,13 +8,13 @@ This is the entry point for a coding agent whose user has asked to connect Agent
 
 ## 1. Discover before asking
 
-Read README.md, docs/DEV-COORDINATION.md, and the development project's AGENTS.md. Inspect the current host for Node.js 22+, Git, GitHub CLI, the selected coding client, and existing Relay configuration. Use `gh auth status` to check authentication without reading or printing credentials.
+Read README.md, docs/DEV-COORDINATION.md, and the development project's AGENTS.md. Inspect the current host for Node.js 22+, Git, GitHub CLI, the selected coding client, and existing Dead Drop configuration. Use `gh auth status` to check authentication without reading or printing credentials.
 
-Keep three locations distinct: the Relay toolkit checkout, the user's development project, and the private GitHub mailbox. If `runtime/config.json` or `runtime/mailbox-worker.json` exists, reuse the matching setup. Never overwrite another mailbox/account's identity.
+Keep three locations distinct: the Dead Drop toolkit checkout, the user's development project, and the private GitHub mailbox. If `runtime/config.json` or `runtime/mailbox-worker.json` exists, reuse the matching setup. Never overwrite another mailbox/account's identity.
 
 | Location | What belongs there |
 | --- | --- |
-| Relay toolkit (`RELAY_ROOT`) | CLI/MCP tools, local configuration, and ignored worker identity |
+| Dead Drop toolkit (`DEAD_DROP_ROOT`) | CLI/MCP tools, local configuration, and ignored worker identity |
 | Development project (`PROJECT_ROOT`) | The code the user authorizes this agent to change |
 | Private mailbox (`OWNER/PRIVATE-MAILBOX`) | Shared messages, tasks, agreements, and skills |
 
@@ -31,7 +31,7 @@ Recommend starting with implementation, testing, documentation, and review withi
 
 Use the user's own GitHub account. If authentication or repository invitation acceptance is needed, guide the user through the interactive step; never request a token. If a mailbox does not exist, obtain the intended owner/name and authorization to create a dedicated private repository. Do not repurpose a public source repository or change its visibility.
 
-Clone the toolkit into its own directory and run `npm ci`. Use an existing matching checkout where possible. Independent CLI workers need separate Relay checkouts so they do not share `runtime/mailbox-worker.json`; this applies even on the same machine and GitHub account. Different providers using the same mailbox have the same repository-specific MCP server name, so keep registration in their respective clients. For multiple workers in the same client, use separate CLI checkouts or deliberately configured client profiles; never overwrite a conflicting registration.
+Clone the toolkit into its own directory and run `npm ci`. Use an existing matching checkout where possible. Independent CLI workers need separate Dead Drop checkouts so they do not share `runtime/mailbox-worker.json`; this applies even on the same machine and GitHub account. Different providers using the same mailbox have the same repository-specific MCP server name, so keep registration in their respective clients. For multiple workers in the same client, use separate CLI checkouts or deliberately configured client profiles; never overwrite a conflicting registration.
 
 Run the appropriate setup, replacing the repository placeholder:
 
@@ -64,7 +64,7 @@ Use docs/AUTONOMY.md to prepare `runtime/autonomy.json` from the user's approved
 
 Run `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex`, choosing `claude`, `cursor`, `hermes`, or `cli` for the corresponding worker. The read-only plan checks local setup and registration, binds the intended worker/project scope, and returns the complete rendered wake prompt. Resolve failed checks. Missing optional local policy does not fail activation; it also does not grant autonomous scope. The next-action planner conservatively blocks task execution suggestions without a readable policy, so record approved autonomous limits before unattended use.
 
-Use the current host's supported scheduler, following docs/DEV-COORDINATION.md for Codex or docs/CLAUDE-CODE.md for Claude Code. Inspect existing schedules first and update a matching one instead of duplicating it. Save the plan's complete `wakePrompt`, which substitutes this host's absolute Relay and development project paths. Preserve existing user scope and notification preferences. Only after observing the intended enabled schedule, record its ID and evidence using the plan's scope, prompt, tool-definition, and toolkit-source hashes; see [activation and upgrades](ACTIVATION-NEXT-ACTIONS.md). The receipt is local self-reported evidence, not scheduler configuration or proof of a peer response. The plan's team findings also do not establish peer readiness. Rerun the plan after upgrading, restart affected MCP connections, and update stale saved prompts deliberately.
+Use the current host's supported scheduler, following docs/DEV-COORDINATION.md for Codex or docs/CLAUDE-CODE.md for Claude Code. Inspect existing schedules first and update a matching one instead of duplicating it. Save the plan's complete `wakePrompt`, which substitutes this host's absolute Dead Drop and development project paths. Preserve existing user scope and notification preferences. Only after observing the intended enabled schedule, record its ID and evidence using the plan's scope, prompt, tool-definition, and toolkit-source hashes; see [activation and upgrades](ACTIVATION-NEXT-ACTIONS.md). The receipt is local self-reported evidence, not scheduler configuration or proof of a peer response. The plan's team findings also do not establish peer readiness. Rerun the plan after upgrading, restart affected MCP connections, and update stale saved prompts deliberately.
 
 If the host has no supported wake mechanism, report that limitation and leave manual CLI/MCP use available. Do not substitute a shell loop or claim that MCP alone provides background execution. Schedule setup on one machine does not configure the other.
 

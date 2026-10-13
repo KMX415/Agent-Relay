@@ -47,7 +47,7 @@ Tools: `create_integration_check`, `get_integration_check`, `list_integration_ch
 
 The immutable input manifest identifies one repository, exact base SHA, ordered input commits, source tasks and revisions, accepted handoff digests, pinned contracts, designated verifier, local validation profile name, deadline, and fixed attempt budget. The first version supports contributions to one repository. Cross-repository integration is deferred.
 
-A validation profile is configured locally under the project's existing human authorization. Mailbox records reference its name and digest; they cannot supply executable shell text. Missing profiles block execution. Relay does not create a profile from collaborator suggestions.
+A validation profile is configured locally under the project's existing human authorization. Mailbox records reference its name and digest; they cannot supply executable shell text. Missing profiles block execution. Dead Drop does not create a profile from collaborator suggestions.
 
 Statuses are `pending`, `running`, `passed`, `failed`, `blocked`, and `expired`. Results record the resulting commit/tree, input digest, observed checks and outcomes, run reference, and bounded evidence excerpts. Provider assertions and locally observed test results remain distinguishable.
 

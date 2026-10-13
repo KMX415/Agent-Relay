@@ -7,7 +7,7 @@ import { planActivation, recordActivation, renderWakePrompt } from '../activatio
 
 const relayRoot=path.resolve('relay-fixture'),projectRoot=path.resolve('project-$&-fixture');
 const identity={repo:'owner/box',login:'owner',agentId:'worker-a'};
-function fixture({receipt,template='Tools RELAY_ROOT; project PROJECT_ROOT.',surface=[{name:'one'}],clientResult,source='original implementation',team=null}={}) {
+function fixture({receipt,template='Tools DEAD_DROP_ROOT; project PROJECT_ROOT.',surface=[{name:'one'}],clientResult,source='original implementation',team=null}={}) {
   const calls=[];
   const deps={relayRoot,toolSurface:surface,node:'node-executable',inspectPath:async()=>({isDirectory:()=>true}),
     listSources:async()=>[{name:'server.mjs',isFile:()=>true},{name:'runtime',isFile:()=>false}],
@@ -19,7 +19,7 @@ function fixture({receipt,template='Tools RELAY_ROOT; project PROJECT_ROOT.',sur
       if(['package.json','package-lock.json'].includes(path.basename(filename)))return '{}';
       if(receipt!==undefined)return typeof receipt==='string'?receipt:JSON.stringify(receipt);
       throw Object.assign(new Error('missing'),{code:'ENOENT'});
-    },execute:async(command,args)=>{calls.push({command,args});return clientResult??JSON.stringify([{name:'agent-relay-owner--box',enabled:true,transport:{command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}}}]);}};
+    },execute:async(command,args)=>{calls.push({command,args});return clientResult??JSON.stringify([{name:'dead-drop-owner--box',enabled:true,transport:{command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}}}]);}};
   return {deps,calls};
 }
 function receiptFor(plan) {return {version:1,selfReported:true,scope:plan.scope,promptHash:plan.promptHash,toolsHash:plan.toolsHash,toolkitHash:plan.toolkitHash,scheduleId:'host-id',evidence:'Observed enabled in supported host',observedAt:'2026-10-12T12:00:00Z'};}
@@ -30,12 +30,12 @@ test('activation plan renders all roots literally and reads exact client registr
   assert.equal(plan.ready,true);assert.equal(plan.receiptStatus,'missing');
   assert.equal(plan.wakePrompt,`Tools ${JSON.stringify(relayRoot)}; project ${JSON.stringify(projectRoot)}.`);
   assert.deepEqual(calls,[{command:'codex',args:['mcp','list','--json']}]);
-  assert.throws(()=>renderWakePrompt('RELAY_ROOT PROJECT_ROOT','relative',projectRoot),/absolute/);
+  assert.throws(()=>renderWakePrompt('DEAD_DROP_ROOT PROJECT_ROOT','relative',projectRoot),/absolute/);
 });
 test('activation catches changed instructions, tool schema, project and worker scope',async()=>{
   const base=await planActivation({projectRoot},fixture().deps),receipt=receiptFor(base);
   assert.equal((await planActivation({projectRoot},fixture({receipt}).deps)).receiptStatus,'current');
-  assert.equal((await planActivation({projectRoot},fixture({receipt,template:'New RELAY_ROOT PROJECT_ROOT'}).deps)).receiptStatus,'upgrade_required');
+  assert.equal((await planActivation({projectRoot},fixture({receipt,template:'New DEAD_DROP_ROOT PROJECT_ROOT'}).deps)).receiptStatus,'upgrade_required');
   assert.equal((await planActivation({projectRoot},fixture({receipt,surface:[{name:'one',inputSchema:{changed:true}}]}).deps)).receiptStatus,'upgrade_required');
   const implementation=await planActivation({projectRoot},fixture({receipt,source:'fixed implementation, same schema'}).deps);
   assert.equal(implementation.receiptStatus,'upgrade_required');assert.equal(implementation.toolsHash,base.toolsHash);assert.notEqual(implementation.toolkitHash,base.toolkitHash);
@@ -49,12 +49,12 @@ test('activation rejects extra Codex arguments and mailbox prefixes; missing Cla
     {command:'node-executable',args:[path.join(relayRoot,'server.mjs'),'extra'],env:{AGENT_MAILBOX_REPO:'owner/box'}},
     {command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box-other'}}
   ]) {
-    const plan=await planActivation({projectRoot},fixture({clientResult:JSON.stringify([{name:'agent-relay-owner--box',enabled:true,transport}])}).deps);
+    const plan=await planActivation({projectRoot},fixture({clientResult:JSON.stringify([{name:'dead-drop-owner--box',enabled:true,transport}])}).deps);
     assert.equal(plan.ready,false);
   }
   const f=fixture();f.deps.execute=async(command,args)=>{f.calls.push({command,args});throw new Error('SECRET');};
   const plan=await planActivation({projectRoot,client:'claude'},f.deps);
-  assert.equal(plan.ready,false);assert.deepEqual(f.calls,[{command:'claude',args:['mcp','get','agent-relay-owner--box']}]);
+  assert.equal(plan.ready,false);assert.deepEqual(f.calls,[{command:'claude',args:['mcp','get','dead-drop-owner--box']}]);
   assert.doesNotMatch(JSON.stringify(plan),/SECRET/);
 });
 test('record requires current hashes, ready identity, verified schedule and preserves conflicting scope',async()=>{
@@ -117,7 +117,7 @@ test('an existing stale lock is never automatically removed or replaced',async()
   }finally {await rm(directory,{recursive:true,force:true});}
 });
 
-const cursorName='agent-relay-owner--box';
+const cursorName='dead-drop-owner--box';
 const cursorEntry=()=>({type:'stdio',command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}});
 function cursorFixture(global,project) {
   const f=fixture(),originalRead=f.deps.read,reads=[];
@@ -188,7 +188,7 @@ test('Hermes activation binds selected profile and performs read-only exact regi
   const f=fixture(),profile=path.resolve('hermes-isolated-fixture');
   f.deps.environment={HERMES_HOME:profile};
   const original=f.deps.read;
-  f.deps.read=async filename=>filename===path.join(profile,'config.yaml')?JSON.stringify({mcp_servers:{'agent-relay-owner--box':{command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}}}}):original(filename);
+  f.deps.read=async filename=>filename===path.join(profile,'config.yaml')?JSON.stringify({mcp_servers:{'dead-drop-owner--box':{command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}}}}):original(filename);
   const plan=await planActivation({projectRoot,client:'hermes'},f.deps);
   assert.equal(plan.ready,true);assert.equal(plan.scope.hermesConfigPath,path.join(profile,'config.yaml'));assert.deepEqual(f.calls,[]);
   assert.match(plan.checks.find(c=>c.name==='client').detail,/scheduling are not verified/);
@@ -201,7 +201,7 @@ test('Hermes activation rejects filtered, disabled, wrong-mailbox and unreadable
   const entry={command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}};
   for(const value of [{...entry,enabled:false},{...entry,tools:{include:[]}},{...entry,env:{AGENT_MAILBOX_REPO:'owner/box-other'}},{...entry,args:[...entry.args,'extra']},'private: [malformed']) {
     const f=fixture(),original=f.deps.read;f.deps.environment={HERMES_HOME:profile};
-    f.deps.read=async filename=>filename===path.join(profile,'config.yaml')?(typeof value==='string'?value:JSON.stringify({mcp_servers:{'agent-relay-owner--box':value}})):original(filename);
+    f.deps.read=async filename=>filename===path.join(profile,'config.yaml')?(typeof value==='string'?value:JSON.stringify({mcp_servers:{'dead-drop-owner--box':value}})):original(filename);
     const plan=await planActivation({projectRoot,client:'hermes'},f.deps);
     assert.equal(plan.ready,false);assert.ok(!JSON.stringify(plan).includes('malformed'));assert.deepEqual(f.calls,[]);
   }
@@ -212,7 +212,7 @@ test('Hermes activation refuses safe mode and administrator overrides',async()=>
     const f=fixture(),profile=path.resolve('hermes-guard-fixture'),managed=path.resolve('hermes-managed-fixture'),original=f.deps.read;
     f.deps.environment={HERMES_HOME:profile,HERMES_MANAGED_DIR:managed,...(mode==='safe'?{HERMES_SAFE_MODE:'true'}:{})};
     f.deps.read=async filename=>{
-      if(filename===path.join(profile,'config.yaml'))return JSON.stringify({mcp_servers:{'agent-relay-owner--box':{command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}}}});
+      if(filename===path.join(profile,'config.yaml'))return JSON.stringify({mcp_servers:{'dead-drop-owner--box':{command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}}}});
       if(filename===path.join(managed,'config.yaml'))return 'mcp_servers: {}';
       return original(filename);
     };

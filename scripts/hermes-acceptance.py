@@ -1,4 +1,4 @@
-"""Exercise the actual Hermes MCP bridge with an isolated synthetic Relay server.
+"""Exercise the actual Hermes MCP bridge with an isolated synthetic Dead Drop server.
 
 No model, GitHub account, gateway, or existing Hermes profile is used.
 """
@@ -54,7 +54,7 @@ def main():
     os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
     config = {"mcp_servers": {"relay-test": {
         "command": args.node,
-        "args": [str(root / "test" / "fixtures" / "hermes-relay-server.mjs")],
+        "args": [str(root / "test" / "fixtures" / "hermes-dead-drop-server.mjs")],
         "cwd": str(root),
         "timeout": 30,
     }}}

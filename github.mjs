@@ -7,8 +7,8 @@ export const emptyState = () => ({ version: 1, agents: {}, messages: [], claims:
 
 const accessDetails = Object.freeze({
   RELAY_PRIVATE_REQUIRED: 'Development mailbox requires a PRIVATE repository',
-  RELAY_USER_REQUIRED: 'Relay requires an authenticated GitHub user identity. This credential cannot access the user endpoint; integration-only cloud credentials are not supported. Use an authorized user session on this host.',
-  RELAY_IDENTITY_INVALID: 'GitHub did not return a valid user login. Relay cannot establish worker ownership; check the authenticated user session on this host.',
+  RELAY_USER_REQUIRED: 'Dead Drop requires an authenticated GitHub user identity. This credential cannot access the user endpoint; integration-only cloud credentials are not supported. Use an authorized user session on this host.',
+  RELAY_IDENTITY_INVALID: 'GitHub did not return a valid user login. Dead Drop cannot establish worker ownership; check the authenticated user session on this host.',
   RELAY_WRITE_REQUIRED: 'GitHub account needs write access to this private repository. Repository metadata did not confirm write access; check the invitation and credential permissions on this host.',
 });
 export function accessDiagnostic(error) {
@@ -138,7 +138,7 @@ export class GitHubStore {
       // replaced. Mailbox data remains exclusively on the separate orphan ref.
       await this.api(base+'/contents/README.md','PUT',{
         message:'Initialize private coordination repository [skip ci]',branch:repo.default_branch,
-        content:Buffer.from('# Private Agent Relay mailbox\n\nCoordination data lives on the separate dev-agent-mailbox branch. Keep this repository private. Never merge that branch into a code branch.\n').toString('base64')
+        content:Buffer.from('# Private Dead Drop mailbox\n\nCoordination data lives on the separate dev-agent-mailbox branch. Keep this repository private. Never merge that branch into a code branch.\n').toString('base64')
       });
     }catch(error){
       if(![409,422].includes(error.status))throw error;

@@ -23,9 +23,9 @@ function absolute(value, label) {
 }
 export function renderWakePrompt(template, relayRoot, projectRoot) {
   relayRoot=absolute(relayRoot,'relay root');projectRoot=absolute(projectRoot,'project root');
-  if (!template.includes('RELAY_ROOT') || !template.includes('PROJECT_ROOT')) throw new Error('Wake template lacks required root placeholders');
+  if (!template.includes('DEAD_DROP_ROOT') || !template.includes('PROJECT_ROOT')) throw new Error('Wake template lacks required root placeholders');
   // A replacement callback preserves literal dollar signs in Windows/POSIX paths.
-  return template.replace(/RELAY_ROOT|PROJECT_ROOT/g,token=>JSON.stringify(token==='RELAY_ROOT'?relayRoot:projectRoot));
+  return template.replace(/DEAD_DROP_ROOT|PROJECT_ROOT/g,token=>JSON.stringify(token==='DEAD_DROP_ROOT'?relayRoot:projectRoot));
 }
 
 // No registration writes: the existing Claude parser is reused behind a read-only command gate.
@@ -112,7 +112,7 @@ export async function planActivation({projectRoot,client='codex'}={}, {
   return {ready:!!scope&&checks.every(c=>c.ok),scope,scopeHash:scope?hash(JSON.stringify(scope)):null,checks,promptHash,toolsHash,toolkitHash,wakePrompt,receiptStatus,receipt,
     team:diagnostics.team??null,
     peerReadinessNote:'Team findings are shared-state observations and worker self-reports, including stale records. They do not verify peer presence, reachability, scheduled execution, or an actual exchange. Local ready status does not mean the peer is ready.',
-    nextSteps:client==='hermes'?['Use the same HERMES_HOME/profile for setup, chat, and scheduled work.','Verify Relay tools in that Hermes session and in the cron toolset separately.','Only within user authorization, save this full prompt in the existing supported Hermes schedule with the explicit project workdir; keep the supported scheduler running.','Observe an actual scheduled peer exchange before claiming background readiness.']:client==='cursor'?['Resolve failed configuration checks, including any project .cursor/mcp.json override.','Inspect Cursor MCP settings and tool approvals, then test the intended connection; matching configuration is not proof of either.','Use a user-authorized supported host wake mechanism only if available. Cursor MCP configuration does not establish a scheduler.','Record a receipt only after independently observing an enabled supported schedule with this complete prompt and current hashes.']:receiptStatus==='current'?['Inspect the supported host scheduler to confirm it remains enabled; a saved receipt is not live verification.']:['Resolve failed checks.','Inspect existing supported host schedules; save this complete wake prompt in the matching schedule within user-authorized scope.','After observing the enabled schedule, explicitly record its ID, evidence, and these hashes.'],
+    nextSteps:client==='hermes'?['Use the same HERMES_HOME/profile for setup, chat, and scheduled work.','Verify Dead Drop tools in that Hermes session and in the cron toolset separately.','Only within user authorization, save this full prompt in the existing supported Hermes schedule with the explicit project workdir; keep the supported scheduler running.','Observe an actual scheduled peer exchange before claiming background readiness.']:client==='cursor'?['Resolve failed configuration checks, including any project .cursor/mcp.json override.','Inspect Cursor MCP settings and tool approvals, then test the intended connection; matching configuration is not proof of either.','Use a user-authorized supported host wake mechanism only if available. Cursor MCP configuration does not establish a scheduler.','Record a receipt only after independently observing an enabled supported schedule with this complete prompt and current hashes.']:receiptStatus==='current'?['Inspect the supported host scheduler to confirm it remains enabled; a saved receipt is not live verification.']:['Resolve failed checks.','Inspect existing supported host schedules; save this complete wake prompt in the matching schedule within user-authorized scope.','After observing the enabled schedule, explicitly record its ID, evidence, and these hashes.'],
     note:'Read-only plan. No worker, registration, policy, or schedule is created. Receipts record a local self-reported observation, not proof of a live scheduler or peer response.'};
 }
 
@@ -134,7 +134,7 @@ export async function recordActivation(options,{plan=planActivation,now=()=>new 
     // Re-read configuration, source hashes and the receipt while holding the
     // exclusive lock. Two first-time writers cannot overwrite different scopes.
     const current=await plan({projectRoot:options.projectRoot,client:options.client});validate(current);
-    if(current.scope.relayRoot!==initial.scope.relayRoot)throw new Error('Relay root changed during activation');
+    if(current.scope.relayRoot!==initial.scope.relayRoot)throw new Error('Dead Drop root changed during activation');
     const receipt={version:1,scope:current.scope,promptHash:current.promptHash,toolsHash:current.toolsHash,toolkitHash:current.toolkitHash,scheduleId,evidence,observedAt:now().toISOString(),selfReported:true};
     await write(temporary,JSON.stringify(receipt,null,2)+'\n',{mode:0o600,flag:'wx'});await move(temporary,destination);
   } finally {

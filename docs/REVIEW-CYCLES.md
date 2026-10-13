@@ -3,7 +3,7 @@
 An implementation worker can submit its in-progress task to a different worker,
 receive findings, fix the work, and resubmit within a fixed round limit. The
 participants discover pending cycles on their ordinary host wakes and call MCP
-or CLI tools. No dashboard is needed. Relay records the workflow; the agents'
+or CLI tools. No dashboard is needed. Dead Drop records the workflow; the agents'
 hosts still run models, edit code, and execute tests.
 
 ## Submit the work
@@ -75,7 +75,7 @@ node cli.mjs advance_review_cycle --input runtime/review-verdict.json
 ```
 
 All mutations require evidence in `artifacts` and a summary. Evidence references
-are reported by agents; Relay does not verify a checkout, test result, or commit.
+are reported by agents; Dead Drop does not verify a checkout, test result, or commit.
 An approval never authorizes a merge, deployment, or other human-gated action.
 
 ## Fix and resubmit
@@ -106,7 +106,7 @@ approve a submission after its task revision changes, and a builder cannot
 complete a task using approval of an older revision. A stale pending or approved
 submission may be resubmitted only while rounds remain. Record meaningful code
 changes as task progress so the revision reflects the work being reviewed;
-Relay cannot detect unreported edits to a separate checkout.
+Dead Drop cannot detect unreported edits to a separate checkout.
 
 ## Stop rather than loop forever
 

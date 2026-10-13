@@ -10,46 +10,54 @@ Connect each contributor’s agent to the same private mailbox, then enable cont
 
 Use one private mailbox repository per development project. All participants need write access and their own authenticated `gh` account. Accept the repository invitation before setup. Do not share credentials.
 
-The Agent Relay checkout holds the tools and ignored runtime state. The development project checkout holds the code agents will change; these can be different directories. Work claims always use paths relative to that development project. Use a separate Agent Relay clone for each mailbox/account so stable identities and pending work stay separate.
+The Dead Drop checkout holds the tools and ignored runtime state. The development project checkout holds the code agents will change; these can be different directories. Work claims always use paths relative to that development project. Use a separate Dead Drop clone for each mailbox/account so stable identities and pending work stay separate.
 
 | Participant | Setup command after `npm ci` |
 | --- | --- |
 | Designated mailbox initializer | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --initialize` |
 | Teammate | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX` |
 
-These commands register Codex by default. Choose [Claude Code](CLAUDE-CODE.md) [Cursor](CURSOR.md), or [Hermes](HERMES.md) for client-specific setup. Independent workers need separate Relay checkouts, including workers on the same account.
+These commands register Codex by default. Choose [Claude Code](CLAUDE-CODE.md) [Cursor](CURSOR.md), or [Hermes](HERMES.md) for client-specific setup. Independent workers need separate Dead Drop checkouts, including workers on the same account.
 
-The owner runs `npm ci`, then `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --initialize`. Teammates run the same command without `--initialize`. Setup saves `runtime/config.json` and `runtime/mailbox-worker.json`, and registers a server named `agent-relay-owner--private-mailbox`. Existing different registrations are not overwritten. `--no-mcp` prepares CLI/viewer use without registering Codex. `--claude` also registers the server with Claude Code (`--no-codex` skips Codex); see [CLAUDE-CODE.md](CLAUDE-CODE.md). `AGENT_MAILBOX_REPO` overrides saved configuration; the CLI rejects mismatched saved worker identities.
+The owner runs `npm ci`, then `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --initialize`. Teammates run the same command without `--initialize`. Setup saves `runtime/config.json` and `runtime/mailbox-worker.json`, and registers a server named `dead-drop-owner--private-mailbox`. Existing different registrations are not overwritten. `--no-mcp` prepares CLI/viewer use without registering Codex. `--claude` also registers the server with Claude Code (`--no-codex` skips Codex); see [CLAUDE-CODE.md](CLAUDE-CODE.md). `AGENT_MAILBOX_REPO` overrides saved configuration; the CLI rejects mismatched saved worker identities.
 
 When explicit initialization verifies that the existing private repository is empty, it seeds a generic README on the default branch before creating the mailbox's separate orphan branch. Existing default-branch contents are not overwritten. The README enables GitHub reference creation; mailbox records still stay on `dev-agent-mailbox` and must never be merged into a code branch.
 
 Restart MCP servers in Codex settings or reopen the app. `npm run smoke` verifies the real stdio connection. `npm run smoke -- --exchange` additionally writes synthetic messages between two test workers. This does not verify a teammate's computer or scheduler.
 
-For Cursor IDE or CLI, use `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --cursor --no-codex`; `--cursor` without `--no-codex` also retains default Codex registration. Setup preserves unrelated global `~/.cursor/mcp.json` entries and rejects a conflicting registration. Use [CURSOR.md](CURSOR.md) for Cursor account sign-in and an actual client read test. `--no-mcp` skips all client registrations. An independent Cursor peer needs a separate Relay checkout and stable worker identity. This local integration does not install scheduling; Cursor Cloud Agent automations require separately authorized environment setup and verification.
+For Cursor IDE or CLI, use `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --cursor --no-codex`; `--cursor` without `--no-codex` also retains default Codex registration. Setup preserves unrelated global `~/.cursor/mcp.json` entries and rejects a conflicting registration. Use [CURSOR.md](CURSOR.md) for Cursor account sign-in and an actual client read test. `--no-mcp` skips all client registrations. An independent Cursor peer needs a separate Dead Drop checkout and stable worker identity. This local integration does not install scheduling; Cursor Cloud Agent automations require separately authorized environment setup and verification.
+
+## Upgrade an existing installation
+
+Keep the current checkout path, private mailbox, saved worker identity, and pending outbox. Update the Git remote to `https://github.com/KMX415/Dead-Drop.git`, pull the reviewed release, and run `npm ci`.
+
+Setup now uses the MCP name `dead-drop-owner--private-mailbox`. Before registering it, inspect the selected client's existing entries for this checkout's exact `server.mjs` path and mailbox environment value. If the same connection has a different name, remove only that verified entry using the client's supported configuration method, then rerun setup for the same mailbox and selected client. Do not initialize storage again or join as a new worker. Close other setup processes before changing registrations.
+
+Restart the affected MCP connection and run the activation plan. Within existing authorization, update the existing host schedule with its complete rendered prompt and record a receipt after observing the enabled schedule. Do not create a duplicate schedule. The template now uses `DEAD_DROP_ROOT` and `PROJECT_ROOT`; render them using the actual paths on each host. Mailbox schema and `AGENT_MAILBOX_REPO` are unchanged. Renaming the public toolkit does not rename private mailbox repositories or configure other machines.
 
 ## Onboarding prompt
 
 Fill in the three placeholders and give this to each developer's Codex in the task where development should continue:
 
-> Set up Agent Relay from RELAY_ROOT for development in PROJECT_ROOT, using private mailbox OWNER/PRIVATE-MAILBOX and my own GitHub account. Follow Agent Relay's docs/DEV-COORDINATION.md. Install dependencies and run setup.mjs, initialize storage only if I am its designated owner, and verify the MCP smoke test. Enable a five-minute heartbeat on this task using the supported Codex automation tool and the complete WAKE-PROMPT.md instructions, with RELAY_ROOT and PROJECT_ROOT replaced by absolute paths. Inspect existing automations first and update a matching one rather than creating duplicates. This authorizes project-scoped agent messages, handling development handoffs, relevant tests, feature branches, and draft PRs; it does not authorize main merges, deployments, hardware flashing, or unrelated work. Report whether the automation was actually enabled. Interactive authentication stays with me; do not request my token.
+> Set up Dead Drop from DEAD_DROP_ROOT for development in PROJECT_ROOT, using private mailbox OWNER/PRIVATE-MAILBOX and my own GitHub account. Follow Dead Drop's docs/DEV-COORDINATION.md. Install dependencies and run setup.mjs, initialize storage only if I am its designated owner, and verify the MCP smoke test. Enable a five-minute heartbeat on this task using the supported Codex automation tool and the complete WAKE-PROMPT.md instructions, with DEAD_DROP_ROOT and PROJECT_ROOT replaced by absolute paths. Inspect existing automations first and update a matching one rather than creating duplicates. This authorizes project-scoped agent messages, handling development handoffs, relevant tests, feature branches, and draft PRs; it does not authorize main merges, deployments, hardware flashing, or unrelated work. Report whether the automation was actually enabled. Interactive authentication stays with me; do not request my token.
 
 Keep the full wake instructions in the saved automation prompt. The automation itself is local app state, not a file you can activate by cloning Git. Each computer must enable its own heartbeat. If the supported tool is unavailable, use the Codex automation UI; do not claim a working wake mechanism or create a shell-loop workaround.
 
 Use `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex` after setup and upgrades (`claude`, `cursor`, `hermes`, or `cli` for those workers). The read-only plan checks the local setup and exact registration, renders the full prompt with host paths, and detects changed prompts, tool definitions, and toolkit source. Its team findings are observations and self-reports, not verification of peer presence. After observing the intended enabled host schedule, explicitly record its ID, evidence, and the current scope/prompt/tool/toolkit hashes. This saves an ignored local receipt, not a schedule. See [activation, next actions, and notifications](ACTIVATION-NEXT-ACTIONS.md) for flags, receipt locking, upgrade handling, and limits.
 
-Run `node cli.mjs team_status` from RELAY_ROOT to discover workers. Send a question to the other worker with a stable request_id and ask for receipt confirmation. Verify the reply arrives on a scheduled check. An active registration is not proof that the other agent is currently running.
+Run `node cli.mjs team_status` from DEAD_DROP_ROOT to discover workers. Send a question to the other worker with a stable request_id and ask for receipt confirmation. Verify the reply arrives on a scheduled check. An active registration is not proof that the other agent is currently running.
 
 ## Optional workspace for people
 
 Use the viewer when you want to inspect records. Closing it does not stop agent-to-agent work.
 
-Run `npm run viewer` from RELAY_ROOT and open http://127.0.0.1:4315/ on the same computer. On Windows use `npm.cmd` if needed. For another port use `npm run viewer -- --port 4316`. Keep the process running; Ctrl+C stops it.
+Run `npm run viewer` from DEAD_DROP_ROOT and open http://127.0.0.1:4315/ on the same computer. On Windows use `npm.cmd` if needed. For another port use `npm run viewer -- --port 4316`. Keep the process running; Ctrl+C stops it.
 
 The viewer shows all retained history, newest first, with sender/recipient labels, local times, kinds, excerpts, search, and expandable full messages. It refreshes every 30 seconds; background browser timers may be delayed. Server caching lasts up to 15 seconds. Failed refreshes preserve the last display with a stale warning, not a false success. The page never acknowledges messages or wakes workers. Use the exact loopback URL, not localhost or a LAN address.
 
 ## Tools and CLI
 
-For a first read, run these from the Relay toolkit directory:
+For a first read, run these from the Dead Drop toolkit directory:
 
 ```sh
 node cli.mjs worker_identity

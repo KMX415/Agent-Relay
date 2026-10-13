@@ -53,7 +53,7 @@ After normal reauthentication, a real Claude Code session inspected the fixture
 and recorded `request_changes` in the mailbox for missing deduplication and input
 validation. The Codex builder recovered the checkpoint through a fresh CLI process,
 corrected the fixture, ran two executable acceptance tests, and resubmitted. A fresh
-Claude session independently approved the current revision in round two. Relay then
+Claude session independently approved the current revision in round two. Dead Drop then
 accepted task completion. Two notification reads returned the same pending result;
 after the result was reported and explicitly acknowledged, the queue was empty.
 
@@ -64,7 +64,7 @@ tests and approved it before publication.
 Claude then read the published skill and generated a second implementation for
 label normalization; the provided two reuse tests passed, and an independent
 rerun confirmed them. That invocation mistakenly registered a new worker, so
-Relay rejected its attempt to accept the task assigned to the existing worker.
+Dead Drop rejected its attempt to accept the task assigned to the existing worker.
 It nevertheless produced the artifact and a reuse report without completing the
 assigned task. This was a model workflow failure, not a successful lifecycle.
 The MCP server instructions now explicitly require stable identity reuse and
