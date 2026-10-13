@@ -82,3 +82,5 @@ This is a queue of current meaningful conditions, not an audit trail of every tr
 ## Verify the real collaboration separately
 
 Local activation checks, simulated tests, and MCP smoke tests cover different layers. None proves an unattended implementation → review → correction → skill reuse cycle between real provider sessions. Use the [live acceptance guide](LIVE-ACCEPTANCE.md) to record that evidence and any unresolved setup or scheduling blockers honestly.
+
+Hermes activation (`--client hermes`) reads the selected profile configuration and binds its path into the receipt scope. Use the same `HERMES_HOME` for setup and activation. A matching registration does not prove tool loading or scheduling; follow [the Hermes guide](HERMES.md) for separate session and cron verification.

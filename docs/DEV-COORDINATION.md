@@ -17,7 +17,7 @@ The Agent Relay checkout holds the tools and ignored runtime state. The developm
 | Designated mailbox initializer | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --initialize` |
 | Teammate | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX` |
 
-These commands register Codex by default. Choose [Claude Code](CLAUDE-CODE.md) or [Cursor](CURSOR.md) for client-specific setup. Independent workers need separate Relay checkouts, including workers on the same account.
+These commands register Codex by default. Choose [Claude Code](CLAUDE-CODE.md) [Cursor](CURSOR.md), or [Hermes](HERMES.md) for client-specific setup. Independent workers need separate Relay checkouts, including workers on the same account.
 
 The owner runs `npm ci`, then `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --initialize`. Teammates run the same command without `--initialize`. Setup saves `runtime/config.json` and `runtime/mailbox-worker.json`, and registers a server named `agent-relay-owner--private-mailbox`. Existing different registrations are not overwritten. `--no-mcp` prepares CLI/viewer use without registering Codex. `--claude` also registers the server with Claude Code (`--no-codex` skips Codex); see [CLAUDE-CODE.md](CLAUDE-CODE.md). `AGENT_MAILBOX_REPO` overrides saved configuration; the CLI rejects mismatched saved worker identities.
 
@@ -35,7 +35,7 @@ Fill in the three placeholders and give this to each developer's Codex in the ta
 
 Keep the full wake instructions in the saved automation prompt. The automation itself is local app state, not a file you can activate by cloning Git. Each computer must enable its own heartbeat. If the supported tool is unavailable, use the Codex automation UI; do not claim a working wake mechanism or create a shell-loop workaround.
 
-Use `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex` after setup and upgrades (`claude`, `cursor`, or `cli` for those workers). The read-only plan checks the local setup and exact registration, renders the full prompt with host paths, and detects changed prompts, tool definitions, and toolkit source. Its team findings are observations and self-reports, not verification of peer presence. After observing the intended enabled host schedule, explicitly record its ID, evidence, and the current scope/prompt/tool/toolkit hashes. This saves an ignored local receipt, not a schedule. See [activation, next actions, and notifications](ACTIVATION-NEXT-ACTIONS.md) for flags, receipt locking, upgrade handling, and limits.
+Use `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex` after setup and upgrades (`claude`, `cursor`, `hermes`, or `cli` for those workers). The read-only plan checks the local setup and exact registration, renders the full prompt with host paths, and detects changed prompts, tool definitions, and toolkit source. Its team findings are observations and self-reports, not verification of peer presence. After observing the intended enabled host schedule, explicitly record its ID, evidence, and the current scope/prompt/tool/toolkit hashes. This saves an ignored local receipt, not a schedule. See [activation, next actions, and notifications](ACTIVATION-NEXT-ACTIONS.md) for flags, receipt locking, upgrade handling, and limits.
 
 Run `node cli.mjs team_status` from RELAY_ROOT to discover workers. Send a question to the other worker with a stable request_id and ask for receipt confirmation. Verify the reply arrives on a scheduled check. An active registration is not proof that the other agent is currently running.
 

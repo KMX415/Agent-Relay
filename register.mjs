@@ -1,8 +1,9 @@
 // Codex stays the default; --claude and --cursor add clients explicitly.
 // --no-codex skips that default. `run` is injected for command-based clients.
 
+import { registerHermes } from './hermes.mjs';
 import { registerCursor } from './cursor.mjs';
-export const CLIENTS = ['codex', 'claude', 'cursor'];
+export const CLIENTS = ['codex', 'claude', 'cursor', 'hermes'];
 
 export function serverName(repo) {
   return 'agent-relay-' + repo.toLowerCase().replace('/', '--');
@@ -63,6 +64,10 @@ export async function register(run, clients, opts) {
     else if (client === 'cursor') {
       const result=await registerCursor(opts,{configPath:opts.cursorConfigPath});
       out.push('Cursor: MCP registration '+(result.status==='matches'?'already matches':'created')+' ('+result.configPath+'). Restart Cursor or reload its MCP servers.');
+    }
+    else if (client === 'hermes') {
+      const result=await registerHermes(opts,{configPath:opts.hermesConfigPath});
+      out.push('Hermes: MCP registration '+(result.status==='matches'?'already matches':'created')+' ('+result.configPath+'). Restart the intended Hermes session or reload its MCP servers.');
     }
     else throw new Error('Unknown MCP client ' + client);
   }

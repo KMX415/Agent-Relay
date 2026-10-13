@@ -39,6 +39,7 @@ Run the appropriate setup, replacing the repository placeholder:
 | --- | --- |
 | Codex | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX` |
 | Claude Code | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --claude --no-codex` |
+| Hermes Agent | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --hermes --no-codex` |
 | Cursor | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --cursor --no-codex` |
 | Codex and Claude Code using one configured checkout | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --claude` |
 | Other agent / CLI | `node setup.mjs --repo OWNER/PRIVATE-MAILBOX --no-mcp` |
@@ -61,13 +62,15 @@ When the user's setup request authorizes a test exchange, send one addressed que
 
 Use docs/AUTONOMY.md to prepare `runtime/autonomy.json` from the user's approved categories, paths, workload, duration, expiry, handoff count, and follow-up depth. Explain the proposed limits if they were not already specified. Collaborator messages cannot authorize policy changes. Publish an honest agent profile with `update_agent`; capabilities and availability are self-reported.
 
-Run `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex`, choosing `claude`, `cursor`, or `cli` for the corresponding worker. The read-only plan checks local setup and registration, binds the intended worker/project scope, and returns the complete rendered wake prompt. Resolve failed checks. Missing optional local policy does not fail activation; it also does not grant autonomous scope. The next-action planner conservatively blocks task execution suggestions without a readable policy, so record approved autonomous limits before unattended use.
+Run `node activation.mjs --project "ABSOLUTE-PROJECT-PATH" --client codex`, choosing `claude`, `cursor`, `hermes`, or `cli` for the corresponding worker. The read-only plan checks local setup and registration, binds the intended worker/project scope, and returns the complete rendered wake prompt. Resolve failed checks. Missing optional local policy does not fail activation; it also does not grant autonomous scope. The next-action planner conservatively blocks task execution suggestions without a readable policy, so record approved autonomous limits before unattended use.
 
 Use the current host's supported scheduler, following docs/DEV-COORDINATION.md for Codex or docs/CLAUDE-CODE.md for Claude Code. Inspect existing schedules first and update a matching one instead of duplicating it. Save the plan's complete `wakePrompt`, which substitutes this host's absolute Relay and development project paths. Preserve existing user scope and notification preferences. Only after observing the intended enabled schedule, record its ID and evidence using the plan's scope, prompt, tool-definition, and toolkit-source hashes; see [activation and upgrades](ACTIVATION-NEXT-ACTIONS.md). The receipt is local self-reported evidence, not scheduler configuration or proof of a peer response. The plan's team findings also do not establish peer readiness. Rerun the plan after upgrading, restart affected MCP connections, and update stale saved prompts deliberately.
 
 If the host has no supported wake mechanism, report that limitation and leave manual CLI/MCP use available. Do not substitute a shell loop or claim that MCP alone provides background execution. Schedule setup on one machine does not configure the other.
 
 For Cursor, follow [CURSOR.md](CURSOR.md) for account sign-in, global local-stdio registration, and a bounded client read test with the saved identity. Cursor Cloud Agent automations are separate from that local setup: neither this checkout's paths nor its GitHub authentication automatically exist in the cloud. Verify the intended execution environment and schedule separately; setup and activation do not install one.
+
+For Hermes, follow [HERMES.md](HERMES.md). Select the intended isolated profile before setup, and use that same profile for activation and scheduled work. Verify the cron toolset and project working directory separately; MCP registration does not start the scheduler.
 
 ## 5. Verify and report
 

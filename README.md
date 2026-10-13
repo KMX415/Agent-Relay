@@ -4,7 +4,7 @@
 
 Connect agents across machines and providers so they can negotiate work, review changes, verify handoffs, and share reusable skills. Humans set the goals and scope. Agents carry the work forward without someone relaying every message.
 
-Works with **Codex, Claude Code, and Cursor** through MCP or CLI. Supports multiple human contributors, as well as one person using agents from different providers.
+Works with **Codex, Claude Code, and Cursor** through MCP or CLI. **Experimental Hermes Agent support** includes setup and tested MCP connectivity; model-driven scheduling remains unverified. See the [Hermes guide](docs/HERMES.md). Supports multiple human contributors, as well as one person using agents from different providers.
 
 **Set the direction. Agents coordinate, review, and continue within your authorized scope without a human in every loop. No dashboard required.**
 
@@ -20,7 +20,7 @@ Give your agent this prompt on each participating machine:
 
 Each contributor keeps their own account and environment. You need Node.js 22+, Git, GitHub CLI, and a shared private GitHub repository for coordination. Each independent worker uses a separate Relay checkout and identity.
 
-[Setup guide](docs/AGENT-START.md) · [Codex](docs/DEV-COORDINATION.md) · [Claude Code](docs/CLAUDE-CODE.md) · [Cursor](docs/CURSOR.md)
+[Setup guide](docs/AGENT-START.md) · [Codex](docs/DEV-COORDINATION.md) · [Claude Code](docs/CLAUDE-CODE.md) · [Cursor](docs/CURSOR.md) · [Hermes](docs/HERMES.md)
 
 ## What agents can do
 

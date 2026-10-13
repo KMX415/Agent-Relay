@@ -183,3 +183,39 @@ test('Cursor activation accepts a leading UTF-8 BOM in global and project JSON',
     assert.deepEqual(f.calls,[]);
   }
 });
+
+test('Hermes activation binds selected profile and performs read-only exact registration inspection',async()=>{
+  const f=fixture(),profile=path.resolve('hermes-isolated-fixture');
+  f.deps.environment={HERMES_HOME:profile};
+  const original=f.deps.read;
+  f.deps.read=async filename=>filename===path.join(profile,'config.yaml')?JSON.stringify({mcp_servers:{'agent-relay-owner--box':{command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}}}}):original(filename);
+  const plan=await planActivation({projectRoot,client:'hermes'},f.deps);
+  assert.equal(plan.ready,true);assert.equal(plan.scope.hermesConfigPath,path.join(profile,'config.yaml'));assert.deepEqual(f.calls,[]);
+  assert.match(plan.checks.find(c=>c.name==='client').detail,/scheduling are not verified/);
+  const other=await planActivation({projectRoot,client:'hermes'},{...f.deps,environment:{HERMES_HOME:path.resolve('other-profile')}});
+  assert.equal(other.ready,false);assert.notEqual(other.scopeHash,plan.scopeHash);
+});
+
+test('Hermes activation rejects filtered, disabled, wrong-mailbox and unreadable registrations without leaking contents',async()=>{
+  const profile=path.resolve('hermes-isolated-fixture');
+  const entry={command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}};
+  for(const value of [{...entry,enabled:false},{...entry,tools:{include:[]}},{...entry,env:{AGENT_MAILBOX_REPO:'owner/box-other'}},{...entry,args:[...entry.args,'extra']},'private: [malformed']) {
+    const f=fixture(),original=f.deps.read;f.deps.environment={HERMES_HOME:profile};
+    f.deps.read=async filename=>filename===path.join(profile,'config.yaml')?(typeof value==='string'?value:JSON.stringify({mcp_servers:{'agent-relay-owner--box':value}})):original(filename);
+    const plan=await planActivation({projectRoot,client:'hermes'},f.deps);
+    assert.equal(plan.ready,false);assert.ok(!JSON.stringify(plan).includes('malformed'));assert.deepEqual(f.calls,[]);
+  }
+});
+
+test('Hermes activation refuses safe mode and administrator overrides',async()=>{
+  for(const mode of ['safe','managed']) {
+    const f=fixture(),profile=path.resolve('hermes-guard-fixture'),managed=path.resolve('hermes-managed-fixture'),original=f.deps.read;
+    f.deps.environment={HERMES_HOME:profile,HERMES_MANAGED_DIR:managed,...(mode==='safe'?{HERMES_SAFE_MODE:'true'}:{})};
+    f.deps.read=async filename=>{
+      if(filename===path.join(profile,'config.yaml'))return JSON.stringify({mcp_servers:{'agent-relay-owner--box':{command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box'}}}});
+      if(filename===path.join(managed,'config.yaml'))return 'mcp_servers: {}';
+      return original(filename);
+    };
+    assert.equal((await planActivation({projectRoot,client:'hermes'},f.deps)).ready,false);assert.deepEqual(f.calls,[]);
+  }
+});

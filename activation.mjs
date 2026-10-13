@@ -7,6 +7,7 @@ import { diagnose } from './doctor.mjs';
 import { run } from './github.mjs';
 import { tools } from './tools.mjs';
 import { register, serverName } from './register.mjs';
+import { hermesConfigPath, parseHermesConfig, inspectHermesEntry, hermesEnvironmentIssue } from './hermes.mjs';
 import { inspectCursorEntry } from './cursor.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -28,12 +29,17 @@ export function renderWakePrompt(template, relayRoot, projectRoot) {
 }
 
 // No registration writes: the existing Claude parser is reused behind a read-only command gate.
-async function inspectClient(client, scope, execute, node, read, userHome) {
+async function inspectClient(client, scope, execute, node, read, userHome, environment) {
   if(client==='cli')return true;
   const name=serverName(scope.repo),server=path.join(scope.relayRoot,'server.mjs');
   if(client==='codex') {
     const entry=JSON.parse(await execute('codex',['mcp','list','--json'])).find(item=>item.name===name);
     return !!entry?.enabled && entry.transport?.command===node && JSON.stringify(entry.transport?.args)===JSON.stringify([server]) && entry.transport?.env?.AGENT_MAILBOX_REPO===scope.repo;
+  }
+  if(client==='hermes') {
+    if(await hermesEnvironmentIssue({env:environment,read}))return false;
+    const config=parseHermesConfig(await read(scope.hermesConfigPath,'utf8'));
+    return inspectHermesEntry(config.mcp_servers?.[name],{name,repo:scope.repo,node,server})==='matches';
   }
   if(client==='cursor') {
     const readConfig=async filename=>{
@@ -57,10 +63,10 @@ async function inspectClient(client, scope, execute, node, read, userHome) {
 
 export async function planActivation({projectRoot,client='codex'}={}, {
   relayRoot=root, read=readFile, listSources=readdir, inspectPath=stat, diagnosis=diagnose, execute=run,
-  toolSurface=tools, node=process.execPath, userHome=homedir()
+  toolSurface=tools, node=process.execPath, userHome=homedir(), environment=process.env
 }={}) {
   relayRoot=absolute(relayRoot,'relay root');projectRoot=absolute(projectRoot,'project root');
-  if(!['codex','claude','cursor','cli'].includes(client))throw new Error('Client must be codex, claude, cursor, or cli');
+  if(!['codex','claude','cursor','hermes','cli'].includes(client))throw new Error('Client must be codex, claude, cursor, hermes, or cli');
   const template=await read(path.join(relayRoot,'WAKE-PROMPT.md'),'utf8');
   const wakePrompt=renderWakePrompt(template,relayRoot,projectRoot);
   const promptHash=hash(wakePrompt),toolsHash=hash(JSON.stringify(toolSurface));
@@ -88,11 +94,11 @@ export async function planActivation({projectRoot,client='codex'}={}, {
     try {
       const identity=JSON.parse(identityText);
       if(!/^[\w.-]+\/[\w.-]+$/.test(identity.repo))throw new Error();
-      scope={relayRoot,projectRoot,client,repo:identity.repo,login:text(identity.login,'login',100),agentId:text(identity.agentId,'worker',200)};
+      scope={relayRoot,projectRoot,client,repo:identity.repo,login:text(identity.login,'login',100),agentId:text(identity.agentId,'worker',200),...(client==='hermes'?{hermesConfigPath:hermesConfigPath({env:environment,home:userHome})}:{})};
     }catch {checks.push({name:'activation_identity',ok:false,detail:'Cannot bind activation to the saved worker'});}
   }
   if(scope) {
-    try {if(!await inspectClient(client,scope,execute,node,read,userHome))throw new Error();checks.push({name:'client',ok:true,detail:client==='cli'?'CLI selected; host still supplies wake-ups':client==='cursor'?'Effective Cursor MCP configuration matches this checkout and mailbox. Tool approval, live connection, and scheduling are not verified.':'Exact MCP registration matches this checkout and mailbox'});}
+    try {if(!await inspectClient(client,scope,execute,node,read,userHome,environment))throw new Error();checks.push({name:'client',ok:true,detail:client==='cli'?'CLI selected; host still supplies wake-ups':client==='hermes'?'Selected Hermes profile registration matches. Live tool loading, model access, and scheduling are not verified.':client==='cursor'?'Effective Cursor MCP configuration matches this checkout and mailbox. Tool approval, live connection, and scheduling are not verified.':'Exact MCP registration matches this checkout and mailbox'});}
     catch {checks.push({name:'client',ok:false,detail:'Client registration is missing, different, disabled, or unreadable; inspect it before setup'});}
   }
   let receiptStatus='missing',receipt=null;
@@ -106,7 +112,7 @@ export async function planActivation({projectRoot,client='codex'}={}, {
   return {ready:!!scope&&checks.every(c=>c.ok),scope,scopeHash:scope?hash(JSON.stringify(scope)):null,checks,promptHash,toolsHash,toolkitHash,wakePrompt,receiptStatus,receipt,
     team:diagnostics.team??null,
     peerReadinessNote:'Team findings are shared-state observations and worker self-reports, including stale records. They do not verify peer presence, reachability, scheduled execution, or an actual exchange. Local ready status does not mean the peer is ready.',
-    nextSteps:client==='cursor'?['Resolve failed configuration checks, including any project .cursor/mcp.json override.','Inspect Cursor MCP settings and tool approvals, then test the intended connection; matching configuration is not proof of either.','Use a user-authorized supported host wake mechanism only if available. Cursor MCP configuration does not establish a scheduler.','Record a receipt only after independently observing an enabled supported schedule with this complete prompt and current hashes.']:receiptStatus==='current'?['Inspect the supported host scheduler to confirm it remains enabled; a saved receipt is not live verification.']:['Resolve failed checks.','Inspect existing supported host schedules; save this complete wake prompt in the matching schedule within user-authorized scope.','After observing the enabled schedule, explicitly record its ID, evidence, and these hashes.'],
+    nextSteps:client==='hermes'?['Use the same HERMES_HOME/profile for setup, chat, and scheduled work.','Verify Relay tools in that Hermes session and in the cron toolset separately.','Only within user authorization, save this full prompt in the existing supported Hermes schedule with the explicit project workdir; keep the supported scheduler running.','Observe an actual scheduled peer exchange before claiming background readiness.']:client==='cursor'?['Resolve failed configuration checks, including any project .cursor/mcp.json override.','Inspect Cursor MCP settings and tool approvals, then test the intended connection; matching configuration is not proof of either.','Use a user-authorized supported host wake mechanism only if available. Cursor MCP configuration does not establish a scheduler.','Record a receipt only after independently observing an enabled supported schedule with this complete prompt and current hashes.']:receiptStatus==='current'?['Inspect the supported host scheduler to confirm it remains enabled; a saved receipt is not live verification.']:['Resolve failed checks.','Inspect existing supported host schedules; save this complete wake prompt in the matching schedule within user-authorized scope.','After observing the enabled schedule, explicitly record its ID, evidence, and these hashes.'],
     note:'Read-only plan. No worker, registration, policy, or schedule is created. Receipts record a local self-reported observation, not proof of a live scheduler or peer response.'};
 }
 

@@ -11,6 +11,7 @@
 | [Codex and development coordination](DEV-COORDINATION.md) | Mailbox setup, CLI usage, and supported host wake-ups |
 | [Claude Code](CLAUDE-CODE.md) | Claude registration, verification, and continuation |
 | [Cursor](CURSOR.md) | IDE and CLI setup, permissions, and scheduling boundaries |
+| [Hermes Agent](HERMES.md) | Profile-scoped MCP setup, activation checks, and isolated validation |
 | [Activation and next actions](ACTIVATION-NEXT-ACTIONS.md) | Check registration, upgrade saved wake prompts, and find useful work |
 
 ## Collaborate and learn
