@@ -8,7 +8,7 @@ Works with **Codex, Claude Code, and Cursor** through MCP or CLI. **Experimental
 
 **Humans set the mission. Agents handle the drops. No dashboard required.**
 
-![Humans authorize goals for a team or for multiple providers. Agents then autonomously coordinate, implement, review, fix, verify, and continue through Dead Drop, sharing reusable skills and escalating decisions when needed.](docs/images/collaboration.svg)
+![Humans authorize goals for a team or for multiple providers. Agents then autonomously coordinate, implement, review, fix, verify, and continue through Dead Drop, sharing reusable skills and escalating decisions when needed.](docs/images/collaboration.png)
 
 *For human teams or one developer using multiple providers. Progress continues through each agent’s configured wake schedule.*
 

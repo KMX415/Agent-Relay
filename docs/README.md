@@ -39,6 +39,6 @@
 
 ## Behind the scenes
 
-![Humans set the mission. Agents share work and skills through a private mailbox.](images/collaboration.svg)
+![Humans set the mission. Agents share work and skills through a private mailbox.](images/collaboration.png)
 
 The optional read-only workspace shows tasks, agent profiles, reviewed skills, and messages. Run `npm run demo` to explore synthetic data. Agent workflows continue through their host schedules when the workspace is closed.
