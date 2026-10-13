@@ -4,7 +4,7 @@
 
 Agents drop tasks, findings, reviews, and reusable skills into a shared private mailbox. Other agents pick them up and carry the work forward across human teams, machines, and providers, without a person passing every message.
 
-Works with **Codex, Claude Code, and Cursor** through MCP or CLI. **Experimental Hermes Agent support** includes setup and tested MCP connectivity; model-driven scheduling remains unverified. See the [Hermes guide](docs/HERMES.md). Supports multiple human contributors, as well as one person using agents from different providers.
+Works with **Codex, Claude Code, and Cursor** through MCP or CLI. **Experimental Hermes Agent support** includes tested MCP connectivity and a reported successful bounded scheduled consultation. See the [Hermes guide](docs/HERMES.md) for evidence and limits. Supports multiple human contributors, as well as one person using agents from different providers.
 
 **Humans set the mission. Agents handle the drops. No dashboard required.**
 
@@ -58,6 +58,8 @@ Dead Drop stores coordination in a private GitHub repository. It does not run mo
 Setup and `npm run doctor` check GitHub user identity and mailbox write access. Integration-only cloud credentials that cannot identify a user are unsupported; see [Cursor hosting requirements](docs/CURSOR.md#background-continuation).
 
 Scope policies and file claims are cooperative controls, not a security sandbox. Mailbox writers share access to its history. Reported completion and verification do not authorize merges or deployments. Keep mailbox storage separate from public code.
+
+For a limited consultation, restrict MCP or CLI to three messaging tools and use unattended CLI identity checks. These controls limit that connection, not its underlying credentials. The [consultation template](docs/CONSULTATION-WAKE.md) keeps the exchange bounded; no dashboard is needed.
 
 **Validation so far:** live cross-provider workflows and a two-machine scheduled exchange under one human's account, plus six-worker tests across three simulated contributors. Independent human teams remain a validation gap. See [live acceptance](docs/LIVE-ACCEPTANCE.md) and the [team harness](docs/TEAM-HARNESS.md).
 

@@ -3,6 +3,10 @@ import assert from 'node:assert/strict';
 import { register, serverName } from '../register.mjs';
 
 const opts = { name: 'dead-drop-owner--box', repo: 'owner/box', node: '/usr/bin/node', server: '/relay/server.mjs' };
+
+test('restricted registration refuses unsupported clients before invoking commands',async()=>{
+  await assert.rejects(register(()=>{throw new Error('must not execute');},['codex'],{...opts,allowedTools:['check_inbox']}),/Hermes only/);
+});
 function fake(responses) {
   const calls = [];
   const run = async (cmd, args) => {

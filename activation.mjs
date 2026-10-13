@@ -9,6 +9,7 @@ import { tools } from './tools.mjs';
 import { register, serverName } from './register.mjs';
 import { hermesConfigPath, parseHermesConfig, inspectHermesEntry, hermesEnvironmentIssue } from './hermes.mjs';
 import { inspectCursorEntry } from './cursor.mjs';
+import { normalizeAllowedTools, restrictedSurface } from './tool-access.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -30,16 +31,17 @@ export function renderWakePrompt(template, relayRoot, projectRoot) {
 
 // No registration writes: the existing Claude parser is reused behind a read-only command gate.
 async function inspectClient(client, scope, execute, node, read, userHome, environment) {
-  if(client==='cli')return true;
+  if(client==='cli')return JSON.stringify(normalizeAllowedTools(environment.DEAD_DROP_TOOLS))===JSON.stringify(scope.allowedTools??null);
   const name=serverName(scope.repo),server=path.join(scope.relayRoot,'server.mjs');
   if(client==='codex') {
     const entry=JSON.parse(await execute('codex',['mcp','list','--json'])).find(item=>item.name===name);
     return !!entry?.enabled && entry.transport?.command===node && JSON.stringify(entry.transport?.args)===JSON.stringify([server]) && entry.transport?.env?.AGENT_MAILBOX_REPO===scope.repo;
   }
   if(client==='hermes') {
+    if(!scope.allowedTools && environment.DEAD_DROP_TOOLS!==undefined)return false;
     if(await hermesEnvironmentIssue({env:environment,read}))return false;
     const config=parseHermesConfig(await read(scope.hermesConfigPath,'utf8'));
-    return inspectHermesEntry(config.mcp_servers?.[name],{name,repo:scope.repo,node,server})==='matches';
+    return inspectHermesEntry(config.mcp_servers?.[name],{name,repo:scope.repo,node,server,allowedTools:scope.allowedTools})==='matches';
   }
   if(client==='cursor') {
     const readConfig=async filename=>{
@@ -61,15 +63,18 @@ async function inspectClient(client, scope, execute, node, read, userHome, envir
   return true;
 }
 
-export async function planActivation({projectRoot,client='codex'}={}, {
+export async function planActivation({projectRoot,client='codex',allowedTools:requestedTools,wakePromptFile}={}, {
   relayRoot=root, read=readFile, listSources=readdir, inspectPath=stat, diagnosis=diagnose, execute=run,
   toolSurface=tools, node=process.execPath, userHome=homedir(), environment=process.env
 }={}) {
   relayRoot=absolute(relayRoot,'relay root');projectRoot=absolute(projectRoot,'project root');
   if(!['codex','claude','cursor','hermes','cli'].includes(client))throw new Error('Client must be codex, claude, cursor, hermes, or cli');
-  const template=await read(path.join(relayRoot,'WAKE-PROMPT.md'),'utf8');
+  const allowedTools=normalizeAllowedTools(requestedTools);
+  if(allowedTools && !['hermes','cli'].includes(client))throw new Error('Tool subset activation supports Hermes or CLI');
+  if(wakePromptFile && !allowedTools)throw new Error('Custom consultation prompts require an explicit tool subset');
+  const template=await read(wakePromptFile?absolute(wakePromptFile,'wake prompt file'):path.join(relayRoot,allowedTools?'docs/CONSULTATION-WAKE.md':'WAKE-PROMPT.md'),'utf8');
   const wakePrompt=renderWakePrompt(template,relayRoot,projectRoot);
-  const promptHash=hash(wakePrompt),toolsHash=hash(JSON.stringify(toolSurface));
+  const promptHash=hash(wakePrompt),toolsHash=hash(JSON.stringify(restrictedSurface(toolSurface,allowedTools)));
   // Hash only root toolkit modules and dependency manifests. Never recurse into
   // runtime, projects, credentials, installed packages, or worker identities.
   const entries=await listSources(relayRoot,{withFileTypes:true});
@@ -87,6 +92,10 @@ export async function planActivation({projectRoot,client='codex'}={}, {
   try {identityText=await read(path.join(relayRoot,'runtime','mailbox-worker.json'),'utf8');}catch {}
   const diagnostics=await diagnosis({readIdentity:async()=>{if(identityText===null)throw new Error('Identity missing');return identityText;}});
   const checks=[...diagnostics.checks];
+  if(allowedTools) {
+    const unresolved=/\b(MAILBOX|LOCAL_WORKER_ID|PEER_WORKER_ID|QUESTIONER_OR_RESPONDER|PILOT_ID|PUBLIC_CASE_URL|CASE_ID|TASK_ID|CASE_REVISION|INPUT_DIGEST|RUN_ID|CHALLENGE_TOKEN|DEADLINE_UTC|SEND_ATTEMPT_BUDGET|SCHEDULE_ID_AND_STOP_METHOD|LOCAL_STATE_DIRECTORY)\b/.test(wakePrompt);
+    checks.push({name:'consultation_prompt',ok:!!wakePromptFile&&!unresolved,detail:'Restricted schedules require --wake-prompt-file with finalized authorized references; save the exact rendered wakePrompt. Prompt checks do not authenticate approval or enforce its business rules.'});
+  }
   try {if(!(await inspectPath(projectRoot)).isDirectory())throw new Error();checks.push({name:'project',ok:true,detail:'Development project directory exists'});}
   catch {checks.push({name:'project',ok:false,detail:'Development project directory is missing or unreadable'});}
   let scope=null;
@@ -97,6 +106,7 @@ export async function planActivation({projectRoot,client='codex'}={}, {
       scope={relayRoot,projectRoot,client,repo:identity.repo,login:text(identity.login,'login',100),agentId:text(identity.agentId,'worker',200),...(client==='hermes'?{hermesConfigPath:hermesConfigPath({env:environment,home:userHome})}:{})};
     }catch {checks.push({name:'activation_identity',ok:false,detail:'Cannot bind activation to the saved worker'});}
   }
+  if(scope && allowedTools)scope.allowedTools=allowedTools;
   if(scope) {
     try {if(!await inspectClient(client,scope,execute,node,read,userHome,environment))throw new Error();checks.push({name:'client',ok:true,detail:client==='cli'?'CLI selected; host still supplies wake-ups':client==='hermes'?'Selected Hermes profile registration matches. Live tool loading, model access, and scheduling are not verified.':client==='cursor'?'Effective Cursor MCP configuration matches this checkout and mailbox. Tool approval, live connection, and scheduling are not verified.':'Exact MCP registration matches this checkout and mailbox'});}
     catch {checks.push({name:'client',ok:false,detail:'Client registration is missing, different, disabled, or unreadable; inspect it before setup'});}
@@ -125,7 +135,7 @@ export async function recordActivation(options,{plan=planActivation,now=()=>new 
     if(options.promptHash!==current.promptHash||options.toolsHash!==current.toolsHash||options.toolkitHash!==current.toolkitHash)throw new Error('Prompt or toolkit changed; restart affected MCP tools, update and verify the saved host prompt before recording');
     if(current.receiptStatus==='different_scope')throw new Error('Existing receipt belongs to another scope; inspect and archive it before recording');
   };
-  const initial=await plan({projectRoot:options.projectRoot,client:options.client});validate(initial);
+  const initial=await plan({projectRoot:options.projectRoot,client:options.client,allowedTools:options.allowedTools,wakePromptFile:options.wakePromptFile});validate(initial);
   const directory=path.join(initial.scope.relayRoot,'runtime'),destination=path.join(directory,'activation.json'),temporary=destination+'.'+randomUUID()+'.tmp',lock=destination+'.lock';
   await makeDirectory(directory,{recursive:true});
   try {await write(lock,JSON.stringify({pid:process.pid,createdAt:now().toISOString()})+'\n',{mode:0o600,flag:'wx'});}
@@ -133,7 +143,7 @@ export async function recordActivation(options,{plan=planActivation,now=()=>new 
   try {
     // Re-read configuration, source hashes and the receipt while holding the
     // exclusive lock. Two first-time writers cannot overwrite different scopes.
-    const current=await plan({projectRoot:options.projectRoot,client:options.client});validate(current);
+    const current=await plan({projectRoot:options.projectRoot,client:options.client,allowedTools:options.allowedTools,wakePromptFile:options.wakePromptFile});validate(current);
     if(current.scope.relayRoot!==initial.scope.relayRoot)throw new Error('Dead Drop root changed during activation');
     const receipt={version:1,scope:current.scope,promptHash:current.promptHash,toolsHash:current.toolsHash,toolkitHash:current.toolkitHash,scheduleId,evidence,observedAt:now().toISOString(),selfReported:true};
     await write(temporary,JSON.stringify(receipt,null,2)+'\n',{mode:0o600,flag:'wx'});await move(temporary,destination);
@@ -146,7 +156,7 @@ export async function recordActivation(options,{plan=planActivation,now=()=>new 
 
 if(process.argv[1]===fileURLToPath(import.meta.url)) {
   try {
-    const options={},names={'--project':'projectRoot','--client':'client','--schedule-id':'scheduleId','--evidence':'evidence','--prompt-hash':'promptHash','--tools-hash':'toolsHash','--toolkit-hash':'toolkitHash','--scope-hash':'scopeHash'};
+    const options={},names={'--project':'projectRoot','--client':'client','--tools':'allowedTools','--wake-prompt-file':'wakePromptFile','--schedule-id':'scheduleId','--evidence':'evidence','--prompt-hash':'promptHash','--tools-hash':'toolsHash','--toolkit-hash':'toolkitHash','--scope-hash':'scopeHash'};
     let record=false;
     for(let i=2;i<process.argv.length;i++) {
       const arg=process.argv[i];
@@ -156,7 +166,7 @@ if(process.argv[1]===fileURLToPath(import.meta.url)) {
       if(options[names[arg]]!==undefined)throw new Error('Duplicate argument');
       options[names[arg]]=process.argv[++i];
     }
-    if(!record&&Object.keys(options).some(key=>!['projectRoot','client'].includes(key)))throw new Error('Receipt arguments require --record');
+    if(!record&&Object.keys(options).some(key=>!['projectRoot','client','allowedTools','wakePromptFile'].includes(key)))throw new Error('Receipt arguments require --record');
     const result=record?await recordActivation(options):await planActivation(options);
     console.log(JSON.stringify(result,null,2));if(result.ready===false)process.exitCode=1;
   } catch {console.error('Activation failed. Supply an absolute --project and --client codex|claude|cursor|cli; inspect local configuration. Recording requires passed checks, verified schedule evidence, and current scope/prompt/tools/toolkit hashes. No schedule was changed.');process.exitCode=1;}

@@ -57,6 +57,7 @@ async function registerClaude(run, { name, repo, node, server }) {
 }
 
 export async function register(run, clients, opts) {
+  if(opts.allowedTools!=null && clients.some(client=>client!=='hermes'))throw new Error('Restricted registration currently supports Hermes only');
   const out = [];
   for (const client of clients) {
     if (client === 'codex') out.push(await registerCodex(run, opts));

@@ -20,7 +20,7 @@
     "demo": "node demo.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "yaml": "2.9.1"
   },
   "description": "Private mailbox for autonomous collaboration and shared skills across human teams and coding agents"

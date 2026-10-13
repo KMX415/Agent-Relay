@@ -13,7 +13,7 @@ function fixture({receipt,template='Tools DEAD_DROP_ROOT; project PROJECT_ROOT.'
     listSources:async()=>[{name:'server.mjs',isFile:()=>true},{name:'runtime',isFile:()=>false}],
     diagnosis:async({readIdentity})=>{assert.deepEqual(JSON.parse(await readIdentity()),identity);return {checks:[{name:'identity',ok:true}],team};},
     read:async filename=>{
-      if(filename.endsWith('WAKE-PROMPT.md'))return template;
+      if(filename.endsWith('WAKE-PROMPT.md')||filename.endsWith('CONSULTATION-WAKE.md'))return template;
       if(filename.endsWith('mailbox-worker.json'))return JSON.stringify(identity);
       if(filename.endsWith('server.mjs'))return source;
       if(['package.json','package-lock.json'].includes(path.basename(filename)))return '{}';
@@ -23,6 +23,40 @@ function fixture({receipt,template='Tools DEAD_DROP_ROOT; project PROJECT_ROOT.'
   return {deps,calls};
 }
 function receiptFor(plan) {return {version:1,selfReported:true,scope:plan.scope,promptHash:plan.promptHash,toolsHash:plan.toolsHash,toolkitHash:plan.toolkitHash,scheduleId:'host-id',evidence:'Observed enabled in supported host',observedAt:'2026-10-12T12:00:00Z'};}
+
+test('restricted CLI activation binds the exact subset to environment, scope and tool hash',async()=>{
+  const subset=['check_inbox','send_message'];
+  const f=fixture({surface:[{name:'check_inbox'},{name:'send_message'},{name:'join_team'}]});
+  f.deps.environment={DEAD_DROP_TOOLS:subset.join(',')};
+  const plan=await planActivation({projectRoot,client:'cli',allowedTools:subset,wakePromptFile:path.join(relayRoot,'docs/CONSULTATION-WAKE.md')},f.deps);
+  assert.equal(plan.ready,true);
+  const draft=await planActivation({projectRoot,client:'cli',allowedTools:subset},f.deps);
+  assert.equal(draft.ready,false);
+  const unfinished=fixture({template:'DEAD_DROP_ROOT PROJECT_ROOT PILOT_ID'});
+  unfinished.deps.environment=f.deps.environment;
+  assert.equal((await planActivation({projectRoot,client:'cli',allowedTools:subset,wakePromptFile:path.join(relayRoot,'docs/CONSULTATION-WAKE.md')},unfinished.deps)).ready,false);
+  assert.deepEqual(plan.scope.allowedTools,subset);
+  const other=await planActivation({projectRoot,client:'cli',allowedTools:['check_inbox']},f.deps);
+  assert.equal(other.ready,false);
+  assert.notEqual(other.scopeHash,plan.scopeHash);
+  assert.notEqual(other.toolsHash,plan.toolsHash);
+  const full=await planActivation({projectRoot,client:'cli'},f.deps);
+  assert.equal(full.ready,false);
+  await assert.rejects(planActivation({projectRoot,client:'codex',allowedTools:subset},f.deps),/subset/);
+});
+
+test('Hermes activation checks exact server enforced subset and invalidates broader receipts',async()=>{
+  const subset=['check_inbox','send_message'];
+  const f=fixture({surface:subset.map(name=>({name}))});
+  f.deps.environment={HERMES_MANAGED_DIR:path.join(relayRoot,'managed')};
+  const original=f.deps.read;
+  let envValue=subset.join(',');
+  f.deps.read=async filename=>filename.endsWith('config.yaml')&&!filename.includes('managed')?JSON.stringify({mcp_servers:{'dead-drop-owner--box':{command:'node-executable',args:[path.join(relayRoot,'server.mjs')],env:{AGENT_MAILBOX_REPO:'owner/box',DEAD_DROP_TOOLS:envValue},tools:{include:subset}}}}):original(filename);
+  const plan=await planActivation({projectRoot,client:'hermes',allowedTools:subset,wakePromptFile:path.join(relayRoot,'docs/CONSULTATION-WAKE.md')},f.deps);
+  assert.equal(plan.ready,true);
+  envValue='check_inbox,join_team,send_message';
+  assert.equal((await planActivation({projectRoot,client:'hermes',allowedTools:subset,wakePromptFile:path.join(relayRoot,'docs/CONSULTATION-WAKE.md')},f.deps)).ready,false);
+});
 
 test('activation plan renders all roots literally and reads exact client registration without mutation',async()=>{
   const {deps,calls}=fixture();

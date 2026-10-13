@@ -4,10 +4,13 @@ import { GitHubStore, run } from './github.mjs';
 import { worker, workerPath } from './cli.mjs';
 import { configuredRepo, configPath } from './config.mjs';
 import { register, serverName } from './register.mjs';
+import { normalizeAllowedTools } from './tool-access.mjs';
+let allowedTools=null;
 let repo, initialize=false, mcp=true, codex=true, claude=false, cursor=false, hermes=false;
 for(let i=2;i<process.argv.length;i++) {
  const arg=process.argv[i];
  if(arg==='--repo' && process.argv[i+1]) repo=process.argv[++i];
+ else if(arg==='--tools' && process.argv[i+1]) { if(allowedTools!==null)throw new Error('Duplicate --tools');allowedTools=normalizeAllowedTools(process.argv[++i]); }
  else if(arg==='--initialize') initialize=true;
  else if(arg==='--no-mcp') mcp=false;
  else if(arg==='--claude') claude=true;          // also register with Claude Code
@@ -17,6 +20,7 @@ for(let i=2;i<process.argv.length;i++) {
  else throw new Error('Usage: node setup.mjs [--repo OWNER/REPO] [--initialize] [--no-mcp] [--claude] [--cursor] [--hermes] [--no-codex]');
 }
 repo ??= configuredRepo();
+if(allowedTools && (!mcp || !hermes || codex || claude || cursor))throw new Error('--tools requires --hermes --no-codex without other clients');
 const store=new GitHubStore(repo), login=await store.verify();
 try {
  const saved=JSON.parse(await readFile(workerPath,'utf8'));
@@ -29,7 +33,7 @@ await writeFile(configPath,JSON.stringify({repo},null,2)+'\n');
 const server=fileURLToPath(new URL('./server.mjs',import.meta.url));
 const name=serverName(repo);
 const clients=mcp?[codex&&'codex',claude&&'claude',cursor&&'cursor',hermes&&'hermes'].filter(Boolean):[];
-for(const line of await register(run,clients,{name,repo,node:process.execPath,server})) console.log(line);
+for(const line of await register(run,clients,{name,repo,node:process.execPath,server,allowedTools})) console.log(line);
 console.log(JSON.stringify({repo,login,workerAgentId:saved.agentId,server,mcpName:clients.length?name:null,mcpClients:clients},null,2));
 console.log('\nLocal setup saved. Next: verify the connection.');
 console.log('1. Restart the selected client’s MCP connection, then run npm run smoke.');

@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, lstat, readFile, open, rename, link, unlink } from 'node:fs/promises';
 
 import { parseDocument, isMap } from 'yaml';
+import { normalizeAllowedTools } from './tool-access.mjs';
 
 /** Conservative effective-config check; never return administrator content. */
 export async function hermesEnvironmentIssue({env=process.env,read=readFile}={}) {
@@ -38,6 +39,7 @@ const object = value => value !== null && typeof value === 'object' && !Array.is
 function options(opts) {
   for (const key of ['name','repo','node','server']) if (typeof opts?.[key] !== 'string' || !opts[key].trim()) throw new Error('Invalid Hermes registration options');
   if (!/^[\w.-]+\/[\w.-]+$/.test(opts.repo) || ['__proto__','prototype','constructor'].includes(opts.name)) throw new Error('Invalid Hermes registration options');
+  normalizeAllowedTools(opts.allowedTools);
   return opts;
 }
 
@@ -49,7 +51,19 @@ export function inspectHermesEntry(entry, opts) {
   if (entry.command !== opts.node || !Array.isArray(entry.args) || entry.args.length !== 1 || entry.args[0] !== opts.server ||
       !object(entry.env) || entry.env.AGENT_MAILBOX_REPO !== opts.repo ||
       (entry.type !== undefined && entry.type !== 'stdio') || (entry.transport !== undefined && entry.transport !== 'stdio') || entry.url !== undefined || entry.envFile !== undefined) return 'mismatch';
-  if(entry.tools!==undefined && entry.tools!==null && (!object(entry.tools) || entry.tools.include!=null || (entry.tools.exclude!=null && (!Array.isArray(entry.tools.exclude) || entry.tools.exclude.length))))return 'filtered';
+  const allowed=normalizeAllowedTools(opts.allowedTools);
+  if (allowed) {
+    if (entry.env.DEAD_DROP_TOOLS !== allowed.join(',')) return 'mismatch';
+    if (!object(entry.tools) || !Array.isArray(entry.tools.include) ||
+        Object.keys(entry.tools).some(key=>!['include','exclude'].includes(key)) ||
+        (entry.tools.exclude !== undefined && (!Array.isArray(entry.tools.exclude) || entry.tools.exclude.length))) return 'filtered';
+    try {
+      if (JSON.stringify(normalizeAllowedTools(entry.tools.include)) !== JSON.stringify(allowed)) return 'filtered';
+    } catch {return 'filtered';}
+  } else {
+    if (Object.hasOwn(entry.env,'DEAD_DROP_TOOLS')) return 'mismatch';
+    if(entry.tools!==undefined && entry.tools!==null && (!object(entry.tools) || entry.tools.include!=null || (entry.tools.exclude!=null && (!Array.isArray(entry.tools.exclude) || entry.tools.exclude.length))))return 'filtered';
+  }
   return 'matches';
 }
 
@@ -105,6 +119,8 @@ export async function readHermesRegistration(opts,{env=process.env,read=readFile
   options(opts);configPath=resolve(configPath);
   const issue=await hermesEnvironmentIssue({env,read});
   if(issue)return {...issue,configPath,name:opts.name};
+  if (!normalizeAllowedTools(opts.allowedTools) && env.DEAD_DROP_TOOLS !== undefined)
+    return {status:'mismatch',reason:'Inherited DEAD_DROP_TOOLS conflicts with unrestricted registration',configPath,name:opts.name};
   try {const {config}=await readConfig(configPath);return {status:state(config,opts),configPath,name:opts.name};}
   catch(error){throw safeError(error);}
 }
@@ -114,6 +130,8 @@ export async function registerHermes(opts,{env=process.env,read=readFile,configP
   options(opts);configPath=resolve(configPath);
   const issue=await hermesEnvironmentIssue({env,read});
   if(issue)throw new Error(issue.reason);
+  if (!normalizeAllowedTools(opts.allowedTools) && env.DEAD_DROP_TOOLS !== undefined)
+    throw new Error('Inherited DEAD_DROP_TOOLS conflicts with unrestricted registration; inspect the host environment');
   const lockPath=configPath+'.dead-drop.lock',tempPath=configPath+'.dead-drop-'+randomUUID()+'.tmp';
   let lock,temporary=false;
   try {
@@ -127,7 +145,13 @@ export async function registerHermes(opts,{env=process.env,read=readFile,configP
     if(status!=='missing')throw new Error('A different, disabled or filtered Hermes registration exists; inspect it before replacing it');
     const document=original.document;
     if(!isMap(document.get('mcp_servers',true)))document.set('mcp_servers',document.createNode({}));
-    document.setIn(['mcp_servers',opts.name],document.createNode({command:opts.node,args:[opts.server],env:{AGENT_MAILBOX_REPO:opts.repo}}));
+    const allowed=normalizeAllowedTools(opts.allowedTools);
+    const entry={command:opts.node,args:[opts.server],env:{AGENT_MAILBOX_REPO:opts.repo}};
+    if (allowed) {
+      entry.env.DEAD_DROP_TOOLS=allowed.join(',');
+      entry.tools={include:allowed};
+    }
+    document.setIn(['mcp_servers',opts.name],document.createNode(entry));
     const content=document.toString();
     if(Buffer.byteLength(content)>1024*1024)throw new Error('Hermes configuration would exceed 1 MiB');
     const temp=await open(tempPath,'wx',0o600);temporary=true;

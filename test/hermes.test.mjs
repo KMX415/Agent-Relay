@@ -115,3 +115,67 @@ test('Hermes managed inspection fails closed on unreadable configuration and use
   assert.equal(issue.status,'managed');
   assert.doesNotMatch(issue.reason,/private-content/);
 });
+
+const consultationTools=['acknowledge_message','check_inbox','send_message'];
+const restrictedOpts={...opts,allowedTools:[...consultationTools].reverse()};
+const restrictedEntry=()=>({...entry(),env:{AGENT_MAILBOX_REPO:opts.repo,DEAD_DROP_TOOLS:consultationTools.join(',')},tools:{include:[...consultationTools]}});
+
+test('Hermes restricted registration persists server enforcement and exact discovery subset',async t=>{
+  const config=await fixture(t);
+  assert.equal((await registerHermes(restrictedOpts,config)).status,'created');
+  const raw=await readFile(config.configPath,'utf8');
+  assert.deepEqual(parseHermesConfig(raw).mcp_servers[opts.name],restrictedEntry());
+  assert.equal((await readHermesRegistration(restrictedOpts,config)).status,'matches');
+  assert.equal((await registerHermes(restrictedOpts,config)).status,'matches');
+  assert.equal(await readFile(config.configPath,'utf8'),raw);
+  assert.equal((await readHermesRegistration(opts,config)).status,'mismatch');
+  await assert.rejects(registerHermes(opts,config),/different, disabled or filtered/);
+  assert.equal(await readFile(config.configPath,'utf8'),raw);
+});
+
+test('Hermes subset comparison refuses missing, broader, malformed or conflicting filters',()=>{
+  assert.equal(inspectHermesEntry(restrictedEntry(),restrictedOpts),'matches');
+  assert.equal(inspectHermesEntry({...restrictedEntry(),tools:{include:[...consultationTools].reverse()}},restrictedOpts),'matches');
+  for (const tools of [undefined,null,{}, {include:[]},{include:['*']},{include:consultationTools.slice(1)},
+    {include:[...consultationTools,'team_status']},{include:[...consultationTools,'check_inbox']},
+    {include:consultationTools,exclude:['send_message']},{include:consultationTools,exclude:'bad'},
+    {include:consultationTools,exclude:null},{include:consultationTools,unexpected:true}]) {
+    assert.equal(inspectHermesEntry({...restrictedEntry(),tools},restrictedOpts),'filtered');
+  }
+  for (const value of [undefined,'','*','check_inbox',consultationTools.slice().reverse().join(','),consultationTools.join(',')+',team_status']) {
+    const candidate=restrictedEntry();
+    if(value===undefined)delete candidate.env.DEAD_DROP_TOOLS;
+    else candidate.env.DEAD_DROP_TOOLS=value;
+    assert.equal(inspectHermesEntry(candidate,restrictedOpts),'mismatch');
+  }
+  assert.equal(inspectHermesEntry(entry(),restrictedOpts),'mismatch');
+  assert.equal(inspectHermesEntry(restrictedEntry(),opts),'mismatch');
+  assert.equal(inspectHermesEntry({...entry(),env:{...entry().env,DEAD_DROP_TOOLS:''}},opts),'mismatch');
+});
+
+test('Hermes subset registration validates requested names and preserves safe-mode controls',async t=>{
+  const config=await fixture(t);
+  for(const allowedTools of [[],['*'],['unknown_tool'],['check_inbox','check_inbox']]) {
+    await assert.rejects(registerHermes({...opts,allowedTools},config));
+  }
+  assert.deepEqual(await readdir(config.root),[]);
+  await assert.rejects(registerHermes(restrictedOpts,{...config,env:{...config.env,HERMES_SAFE_MODE:'true'}}),/safe mode/);
+  await mkdir(config.env.HERMES_MANAGED_DIR);
+  await writeFile(join(config.env.HERMES_MANAGED_DIR,'config.yaml'),'mcp_servers: {}');
+  await assert.rejects(registerHermes(restrictedOpts,config),/managed configuration/);
+  await assert.rejects(readFile(config.configPath),{code:'ENOENT'});
+});
+
+test('Hermes full registration refuses inherited tool restrictions without clearing them',async t=>{
+  const config=await fixture(t);
+  for (const DEAD_DROP_TOOLS of ['', 'check_inbox', '*']) {
+    const inherited={...config,env:{...config.env,DEAD_DROP_TOOLS}};
+    assert.equal((await readHermesRegistration(opts,inherited)).status,'mismatch');
+    await assert.rejects(registerHermes(opts,inherited),/Inherited DEAD_DROP_TOOLS/);
+    assert.equal(inherited.env.DEAD_DROP_TOOLS,DEAD_DROP_TOOLS);
+    assert.deepEqual(await readdir(config.root),[]);
+  }
+  const inherited={...config,env:{...config.env,DEAD_DROP_TOOLS:'check_inbox'}};
+  assert.equal((await registerHermes(restrictedOpts,inherited)).status,'created');
+  assert.equal((await readHermesRegistration(restrictedOpts,inherited)).status,'matches');
+});

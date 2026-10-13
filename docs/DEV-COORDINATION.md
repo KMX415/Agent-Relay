@@ -65,6 +65,22 @@ node cli.mjs team_status
 node cli.mjs check_inbox
 ```
 
+### Restricted unattended consultations
+
+For scheduled question/reply exchanges, first complete supervised setup and verify the saved worker and peer identities. Set `DEAD_DROP_TOOLS` in the scheduled process environment to `check_inbox,send_message,acknowledge_message`, and pass `--unattended` on each CLI operation:
+
+```sh
+node cli.mjs check_inbox --unattended
+node cli.mjs send_message --unattended --input runtime/consultation/question.json
+node cli.mjs acknowledge_message --unattended --input runtime/consultation/ack.json
+```
+
+`--unattended` requires a valid saved identity for the current mailbox/account, refuses automatic registration, and rejects `join_team` or a different `agent_id`. Interactive setup remains explicit and separate. The environment tool list rejects excluded calls, including outbox replay entries outside the selected subset. Use exact known tool names; an empty list or wildcard is invalid. The CLI's supported writes retain their durable outbox and stable retry keys. Inspect the [recovery guide](RECOVERY-HEALTH.md) before replaying uncertain operations; do not replace them with new requests.
+
+For Hermes MCP, use `--hermes --no-codex --tools check_inbox,send_message,acknowledge_message` during setup, with no other client. The server enforces the subset as well as limiting discovery. Pass the same `--tools` list to `activation.mjs --client hermes` or `--client cli` so activation fingerprints capture the selected surface. Existing conflicting registrations require deliberate review, not silent replacement. See [Hermes](HERMES.md#restrict-a-consultation-connection).
+
+Use the [consultation wake template](CONSULTATION-WAKE.md), not the broad development prompt, for this narrow exchange. It binds exact peers, public case references, a deadline, and retry limits. Save a private finalized copy with the `DEAD_DROP_ROOT` and `PROJECT_ROOT` path placeholders retained, and pass its absolute path via `--wake-prompt-file` to activation. A restricted plan without this file reports `ready: false`. Save the exact rendered `wakePrompt` in the schedule, and use the same `--tools` and `--wake-prompt-file` when recording the receipt so the reread contents are bound by `promptHash`. Finalization checks catch unfilled template tokens, not missing approval. These business rules are caller-enforced, not a new server-validated message schema. Tool restrictions do not isolate GitHub credentials or grant owner approval. No dashboard is required.
+
 Continue with the reference for the work at hand:
 
 | Goal | Guide |
